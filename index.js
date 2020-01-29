@@ -1,4 +1,6 @@
 const express = require('express');
+var winston = require('winston'),
+    expressWinston = require('express-winston');
 const {
     check,
     validationResult
@@ -8,6 +10,22 @@ const Checker = require('./checker');
 const DbUtil = require('./db');
 const app = express();
 app.use(express.json());
+
+app.use(expressWinston.logger({
+    transports: [
+        new winston.transports.Console()
+    ],
+    format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.timestamp(),
+        winston.format.printf(
+            (info) => {
+                return `${info.timestamp}: ${info.message}`;
+            })
+
+    ),
+    meta: false
+}));
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, '/client/build')));
