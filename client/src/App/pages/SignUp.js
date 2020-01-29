@@ -49,7 +49,7 @@ class SignUp extends Component {
   }
 
   componentDidMount() {
-    fetch('/api/getTrailStatus')
+    fetch('/api/trailstatus')
       .then(res => res.json())
       .then(status => this.setState({ trailStatus: status.trailStatus, lastCheckTime: status.lastCheck }));
   }

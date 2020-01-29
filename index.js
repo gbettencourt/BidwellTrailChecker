@@ -1,5 +1,8 @@
 const express = require('express');
-const { check, validationResult } = require('express-validator');
+const {
+    check,
+    validationResult
+} = require('express-validator');
 const path = require('path');
 const Checker = require('./checker');
 const DbUtil = require('./db');
@@ -9,12 +12,15 @@ app.use(express.json());
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, '/client/build')));
 
-app.get('/api/getList', async (req, res) => {
-    var list = await dbUtil.fetchEmails();
+app.get('/api/users', async (req, res) => {
+    let list = [];
+    if (req.connection.localAddress === req.connection.remoteAddress) {
+        list = await dbUtil.fetchEmails();
+    }
     res.json(list);
 });
 
-app.get('/api/getTrailStatus', (req, res) => {
+app.get('/api/trailstatus', (req, res) => {
     res.json(checker.currentStatus());
 });
 
@@ -25,7 +31,10 @@ app.post('/api/registeremail', [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         console.log('registeremail invalid email=' + req.body);
-        res.send({ success: false, error: 'invalid email' });
+        res.send({
+            success: false,
+            error: 'invalid email'
+        });
         return;
     }
     let email = req.body.email;
@@ -33,7 +42,10 @@ app.post('/api/registeremail', [
 
     let list = await dbUtil.fetchEmails();
     if (list.includes(email)) {
-        res.send({ success: false, error: 'email already registered' });
+        res.send({
+            success: false,
+            error: 'email already registered'
+        });
         return;
     }
     await dbUtil.addEmail(email);
@@ -46,7 +58,9 @@ app.post('/api/registeremail', [
         console.log('error sending new user email', e);
     }
 
-    res.send({ success: true });
+    res.send({
+        success: true
+    });
 });
 
 app.post('/api/rmemail', [
@@ -56,14 +70,19 @@ app.post('/api/rmemail', [
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        res.send({ success: false, error: 'invalid email' });
+        res.send({
+            success: false,
+            error: 'invalid email'
+        });
         return;
     }
     let email = req.body.email;
     console.log('removing email=' + email);
 
     await dbUtil.removeEmail(email);
-    res.send({ success: true });
+    res.send({
+        success: true
+    });
 });
 
 // Handles any requests that don't match the ones above

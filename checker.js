@@ -26,8 +26,8 @@ module.exports = class Checker {
             async (err, res, body) => {
                 console.log("fetch complete, parsing...");
                 let root = HTMLParser.parse(body);
-                var trailStatusNode = root.querySelector('#sideColumn');
-                var childParas = trailStatusNode.querySelectorAll('p');
+                let trailStatusNode = root.querySelector('#sideColumn');
+                let childParas = trailStatusNode.querySelectorAll('p');
                 for (let p of childParas) {
                     if (p.rawText.startsWith("UPPER PARK TRAILS")) {
                         if (p.lastChild.rawText == "OPEN") {
@@ -53,8 +53,8 @@ module.exports = class Checker {
 
     async sendMail(trailStatus) {
 
-        var dbUtil = new DbUtil();
-        var emailList = await dbUtil.fetchEmails();
+        let dbUtil = new DbUtil();
+        let emailList = await dbUtil.fetchEmails();
         dbUtil.close();
 
         console.log("sending email notifications");
