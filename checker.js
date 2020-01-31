@@ -24,7 +24,7 @@ module.exports = class Checker {
 
     fetchStatus() {
 
-        let trailStatus = "Undetermined"
+        let trailStatus = ""
         console.log("fetching status HTML page");
 
         request(
@@ -33,25 +33,32 @@ module.exports = class Checker {
                 console.log("fetch complete, parsing...");
                 let root = HTMLParser.parse(body);
                 let trailStatusNode = root.querySelector('#sideColumn');
-                let childParas = trailStatusNode.querySelectorAll('p');
-                for (let p of childParas) {
-                    if (p.rawText.startsWith("UPPER PARK TRAILS")) {
-                        if (p.lastChild.rawText == "OPEN") {
-                            trailStatus = "Open";
-                        } else {
-                            trailStatus = "Closed";
+                if (trailStatusNode) {
+                    let childParas = trailStatusNode.querySelectorAll('p');
+                    for (let p of childParas) {
+                        if (p.rawText.startsWith("UPPER PARK TRAILS")) {
+                            if (p.lastChild.rawText == "OPEN") {
+                                trailStatus = "Open";
+                            } else {
+                                trailStatus = "Closed";
+                            }
                         }
                     }
+                } else {
+                    console.log("Query for #sideColumn failed! Body: ", body);
                 }
 
                 console.log('processing complete, trail status: ' + trailStatus);
 
-                if (trailStatus != this.config.lastStatus && this.config.lastStatus != "NULL") {
-                    await this.sendMail(trailStatus);
-                }
+                if (trailStatus != "") {
+                    if (trailStatus != this.config.lastStatus
+                        && this.config.lastStatus != "NULL") {
+                        await this.sendMail(trailStatus);
+                    }
 
-                this.config.lastStatus = trailStatus;
-                this.config.lastCheck = new Date();
+                    this.config.lastStatus = trailStatus;
+                    this.config.lastCheck = new Date();
+                }
             });
     }
 
