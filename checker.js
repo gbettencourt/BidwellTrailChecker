@@ -1,6 +1,7 @@
 const request = require("request");
 const HTMLParser = require("node-html-parser");
 const nodemailer = require("nodemailer");
+const schedule = require('node-schedule');
 //const format = require("string-template");
 const DbUtil = require('./db');
 //const htmlTmplFile = 'email-tmpl.html';
@@ -14,6 +15,11 @@ module.exports = class Checker {
             lastStatus: 'NULL'
         };
         this.fetchStatus();
+
+        //check every 5 minutes
+        schedule.scheduleJob('*/5 * * * *', () => {
+            this.fetchStatus();
+        });
     }
 
     fetchStatus() {
@@ -47,8 +53,6 @@ module.exports = class Checker {
                 this.config.lastStatus = trailStatus;
                 this.config.lastCheck = new Date();
             });
-
-        setTimeout(() => this.fetchStatus(), 600000 /* 10 minutes*/);
     }
 
     async sendMail(trailStatus) {

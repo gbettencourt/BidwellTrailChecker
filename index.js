@@ -16,15 +16,15 @@ app.use(expressWinston.logger({
         new winston.transports.Console()
     ],
     format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.timestamp(),
+        winston.format.colorize({ all: true }),
+        winston.format.timestamp({
+            format: 'MM-DD-YYYY HH:mm:ss'
+        }),
         winston.format.printf(
             (info) => {
                 return `${info.timestamp}: ${info.message}`;
             })
-
-    ),
-    meta: false
+    )
 }));
 
 // Serve the static files from the React app
