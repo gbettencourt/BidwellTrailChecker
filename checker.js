@@ -11,7 +11,7 @@ module.exports = class Checker {
 	constructor() {
 		this.config = {
 			lastCheck: new Date(),
-			lastStatus: 'NULL'
+			lastStatus: 'NULL',
 		};
 		this.fetchStatus();
 
@@ -33,7 +33,7 @@ module.exports = class Checker {
 				let childParas = trailStatusNode.querySelectorAll('p');
 				for (let p of childParas) {
 					if (p.rawText.startsWith('UPPER PARK TRAILS')) {
-						if (p.lastChild.rawText == 'OPEN') {
+						if (p.lastChild.rawText.trim() == 'OPEN') {
 							trailStatus = 'Open';
 							break;
 						} else {
@@ -87,7 +87,7 @@ module.exports = class Checker {
 					to: email,
 					subject: 'Bidwell Trail Status Update',
 					//html: html
-					text: 'Trail status changed to: ' + trailStatus
+					text: 'Trail status changed to: ' + trailStatus,
 				});
 				console.log('Message sent: %s', info.messageId);
 			}
@@ -99,7 +99,7 @@ module.exports = class Checker {
 	currentStatus() {
 		return {
 			trailStatus: this.config.lastStatus,
-			lastCheck: this.config.lastCheck
+			lastCheck: this.config.lastCheck,
 		};
 	}
 
@@ -110,8 +110,8 @@ module.exports = class Checker {
 			secure: false,
 			auth: {
 				user: process.env.SMTP_USER,
-				pass: process.env.SMTP_PWD
-			}
+				pass: process.env.SMTP_PWD,
+			},
 		});
 	}
 
@@ -120,7 +120,7 @@ module.exports = class Checker {
 			from: process.env.SMTP_FROM_EMAIL,
 			to: process.env.SMTP_ADMIN_EMAIL,
 			subject: 'New user registered',
-			text: 'New user: ' + email
+			text: 'New user: ' + email,
 		});
 	}
 
@@ -132,7 +132,7 @@ module.exports = class Checker {
 			text:
 				'Thank you for registering!  The current trail status is ' +
 				this.config.lastStatus +
-				". We'll send you an update when that changes!"
+				". We'll send you an update when that changes!",
 		});
 	}
 };
