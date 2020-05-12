@@ -10,10 +10,16 @@ Edit the .env file, set your postgres database login, smtp settings.
 
 From command line:
 
+```sh
 npm install
 
 cd client && npm install && npm run build
 
 cd ..
 
-npm start 
+npm start
+```
+
+Example:
+
+http://chicomtb.com/
