@@ -28,7 +28,15 @@ module.exports = class Checker {
 		request(process.env.TRAIL_STATUS_URL, {}, async (err, res, body) => {
 			console.log('fetch complete, parsing...');
 			let root = HTMLParser.parse(body);
-			let trailStatusNode = root.querySelector('#sideColumn');
+
+			let trailStatus =
+				root
+					.querySelector('table td')
+					.parentNode.rawText.indexOf('Open') === -1
+					? 'Closed'
+					: 'Open';
+
+			/* let trailStatusNode = root.querySelector('#sideColumn');
 			if (trailStatusNode) {
 				let childParas = trailStatusNode.querySelectorAll('p');
 				for (let p of childParas) {
@@ -43,7 +51,7 @@ module.exports = class Checker {
 				}
 			} else {
 				console.log('Query for #sideColumn failed! Body: ', body);
-			}
+			} */
 
 			console.log('processing complete, trail status: ' + trailStatus);
 
