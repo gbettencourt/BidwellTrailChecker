@@ -5,6 +5,9 @@ const { check, validationResult } = require('express-validator');
 const path = require('path');
 const Checker = require('./checker');
 const DbUtil = require('./db');
+const request = require('request');
+require('dotenv').config();
+
 const app = express();
 app.use(express.json());
 
@@ -14,12 +17,12 @@ app.use(
 		format: winston.format.combine(
 			winston.format.colorize({ all: true }),
 			winston.format.timestamp({
-				format: 'MM-DD-YYYY HH:mm:ss'
+				format: 'MM-DD-YYYY HH:mm:ss',
 			}),
-			winston.format.printf(info => {
+			winston.format.printf((info) => {
 				return `${info.timestamp}: ${info.message}`;
 			})
-		)
+		),
 	})
 );
 
@@ -44,34 +47,61 @@ app.post('/api/registeremail', [check('email').isEmail()], async (req, res) => {
 		console.log('registeremail invalid email=' + req.body);
 		res.send({
 			success: false,
-			error: 'invalid email'
+			error: 'invalid email',
 		});
 		return;
 	}
 	let email = req.body.email;
-	console.log('register new email=' + email);
+	let token = req.body.token;
+	console.log('register new email=' + email + ' token=' + token);
 
-	let list = await dbUtil.fetchEmails();
-	if (list.includes(email)) {
-		res.send({
-			success: false,
-			error: 'email already registered'
-		});
-		return;
-	}
-	await dbUtil.addEmail(email);
+	request.post(
+		'https://www.google.com/recaptcha/api/siteverify',
+		{
+			formData: {
+				secret: process.env.CAPTCHA_SECRET_KEY,
+				response: token,
+			},
+		},
+		async (err, response, body) => {
+			let captchaResponse = JSON.parse(body);
+			let score = parseFloat(captchaResponse.score);
+			console.log('capthca score: ' + body);
+			if (score >= 0.5) {
+				let list = await dbUtil.fetchEmails();
+				if (list.includes(email)) {
+					res.send({
+						success: false,
+						error: 'email already registered',
+					});
+					return;
+				}
+				await dbUtil.addEmail(email);
 
-	//send confirmation emails
-	try {
-		checker.sendNewUserNotification(email);
-		checker.sendRegEmail(email);
-	} catch (e) {
-		console.log('error sending new user email', e);
-	}
+				//send confirmation emails
+				try {
+					checker.sendNewUserNotification(email, score);
+					checker.sendRegEmail(email);
+				} catch (e) {
+					console.log('error sending new user email', e);
+				}
 
-	res.send({
-		success: true
-	});
+				res.send({
+					success: true,
+				});
+			} else {
+				try {
+					checker.sendNewUserFailedNotification(email, score);
+				} catch (e) {
+					console.log('error sending email', e);
+				}
+				res.send({
+					success: false,
+					error: 'You seem to be a bot',
+				});
+			}
+		}
+	);
 });
 
 app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
@@ -81,16 +111,21 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
 	if (!errors.isEmpty()) {
 		res.send({
 			success: false,
-			error: 'invalid email'
+			error: 'invalid email',
 		});
 		return;
 	}
 	let email = req.body.email;
 	console.log('removing email=' + email);
+	try {
+		checker.sendUserUnsubNotification(email);
+	} catch (e) {
+		console.log('error sending email', e);
+	}
 
 	await dbUtil.removeEmail(email);
 	res.send({
-		success: true
+		success: true,
 	});
 });
 

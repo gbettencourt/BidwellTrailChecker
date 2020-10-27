@@ -10,6 +10,10 @@ import Typography from '@material-ui/core/Typography';
 import { withStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import Link from '@material-ui/core/Link';
+import {
+	GoogleReCaptchaProvider,
+	GoogleReCaptcha,
+} from 'react-google-recaptcha-v3';
 
 const styles = (theme) => ({
 	paper: {
@@ -36,6 +40,7 @@ class SignUp extends Component {
 		super(props);
 		this.handleRegisterClick = this.handleRegisterClick.bind(this);
 		this.handleEmailChange = this.handleEmailChange.bind(this);
+		this.captchaVerify = this.captchaVerify.bind(this);
 		this.state = {
 			isRegistered: false,
 			isEmailValid: true,
@@ -44,6 +49,7 @@ class SignUp extends Component {
 			regError: '',
 			trailStatus: '',
 			lastCheckTime: '',
+			token: '',
 		};
 	}
 
@@ -67,7 +73,7 @@ class SignUp extends Component {
 			});
 			return;
 		}
-		let postData = { email: this.state.email };
+		let postData = { email: this.state.email, token: this.state.token };
 		fetch('/api/registeremail', {
 			method: 'post',
 			body: JSON.stringify(postData),
@@ -87,20 +93,35 @@ class SignUp extends Component {
 		this.setState({ email: event.target.value });
 	}
 
+	captchaVerify(token) {
+		this.setState({ token });
+	}
+
 	render() {
 		const { classes } = this.props;
 		const isRegistered = this.state.isRegistered;
+		const regError = this.state.regError;
 		const trailStatusStyle = {
 			color: this.state.trailStatus === 'Open' ? 'green' : 'red',
 		};
 
 		return (
 			<Container component="main" maxWidth="xs">
+				<GoogleReCaptchaProvider
+					reCaptchaKey={process.env.REACT_APP_CAPTCHA_SITE_KEY}
+				>
+					<GoogleReCaptcha onVerify={this.captchaVerify} />
+				</GoogleReCaptchaProvider>
 				<CssBaseline />
 				<div className={classes.paper}>
 					<Avatar className={classes.avatar}>
 						<BikeIcon />
 					</Avatar>
+					{regError && (
+						<Typography component="h1" variant="h5">
+							Unable to register {regError}
+						</Typography>
+					)}
 					{isRegistered ? (
 						<Typography component="h1" variant="h5">
 							Your registration was successful!
