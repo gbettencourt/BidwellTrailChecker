@@ -2,9 +2,7 @@ const request = require('request');
 const HTMLParser = require('node-html-parser');
 const nodemailer = require('nodemailer');
 const schedule = require('node-schedule');
-//const format = require("string-template");
 const DbUtil = require('./db');
-//const htmlTmplFile = 'email-tmpl.html';
 require('dotenv').config();
 
 module.exports = class Checker {
@@ -32,26 +30,10 @@ module.exports = class Checker {
 			let trailStatus =
 				root
 					.querySelector('table td')
-					.parentNode.rawText.indexOf('Open') === -1
+					.parentNode.rawText.toLowerCase()
+					.indexOf('open') === -1
 					? 'Closed'
 					: 'Open';
-
-			/* let trailStatusNode = root.querySelector('#sideColumn');
-			if (trailStatusNode) {
-				let childParas = trailStatusNode.querySelectorAll('p');
-				for (let p of childParas) {
-					if (p.rawText.startsWith('UPPER PARK TRAILS')) {
-						if (p.lastChild.rawText.trim() == 'OPEN') {
-							trailStatus = 'Open';
-							break;
-						} else {
-							trailStatus = 'Closed';
-						}
-					}
-				}
-			} else {
-				console.log('Query for #sideColumn failed! Body: ', body);
-			} */
 
 			console.log('processing complete, trail status: ' + trailStatus);
 
@@ -77,24 +59,14 @@ module.exports = class Checker {
 		console.log('sending email notifications');
 
 		try {
-			//let htmlTmpl = fs.readFileSync(htmlTmplFile).toString();
-
 			let transporter = this.getTransporter();
 
 			for (let email of emailList) {
 				console.log('sending email to:' + email);
-				/*
-                let html = format(htmlTmpl, {
-                    email: email,
-                    trailStatus: trailStatus,
-                    statusColor: trailStatus == "Open" ? "green" : "red"
-                });
-                */
 				let info = await transporter.sendMail({
 					from: process.env.SMTP_FROM_EMAIL,
 					to: email,
 					subject: 'Bidwell Trail Status Update',
-					//html: html
 					text: 'Trail status changed to: ' + trailStatus,
 				});
 				console.log('Message sent: %s', info.messageId);
