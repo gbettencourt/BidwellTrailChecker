@@ -67,7 +67,7 @@ app.post('/api/registeremail', [check('email').isEmail()], async (req, res) => {
 			let captchaResponse = JSON.parse(body);
 			let score = parseFloat(captchaResponse.score);
 			console.log('capthca score: ' + body);
-			if (score >= 0.5) {
+			if (score >= 0) {
 				let list = await dbUtil.fetchEmails();
 				if (list.includes(email)) {
 					res.send({
