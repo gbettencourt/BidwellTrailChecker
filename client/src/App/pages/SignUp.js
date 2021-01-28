@@ -192,6 +192,7 @@ class SignUp extends Component {
 											required
 											fullWidth
 											id="captcha"
+											type="number"
 											label="Enter Code Below"
 											name="captcha"
 											value={this.state.captcha}
