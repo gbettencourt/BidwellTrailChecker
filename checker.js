@@ -95,21 +95,12 @@ module.exports = class Checker {
 		});
 	}
 
-	sendNewUserNotification(email, score) {
+	sendNewUserNotification(email) {
 		this.getTransporter().sendMail({
 			from: process.env.SMTP_FROM_EMAIL,
 			to: process.env.SMTP_ADMIN_EMAIL,
 			subject: 'New user registered',
-			text: 'New user: ' + email + ' Score: ' + score,
-		});
-	}
-
-	sendNewUserFailedNotification(email, score) {
-		this.getTransporter().sendMail({
-			from: process.env.SMTP_FROM_EMAIL,
-			to: process.env.SMTP_ADMIN_EMAIL,
-			subject: 'New user registration failed',
-			text: 'Email: ' + email + ' Score: ' + score,
+			text: 'New user: ' + email,
 		});
 	}
 

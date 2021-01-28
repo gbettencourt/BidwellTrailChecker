@@ -65,7 +65,7 @@ app.post('/api/registeremail', [check('email').isEmail()], async (req, res) => {
 
 	//send confirmation emails
 	try {
-		checker.sendNewUserNotification(email, score);
+		checker.sendNewUserNotification(email);
 		checker.sendRegEmail(email);
 	} catch (e) {
 		console.log('error sending new user email', e);
