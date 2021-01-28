@@ -5,7 +5,6 @@ const { check, validationResult } = require('express-validator');
 const path = require('path');
 const Checker = require('./checker');
 const DbUtil = require('./db');
-const request = require('request');
 require('dotenv').config();
 
 const app = express();
@@ -52,56 +51,29 @@ app.post('/api/registeremail', [check('email').isEmail()], async (req, res) => {
 		return;
 	}
 	let email = req.body.email;
-	let token = req.body.token;
-	console.log('register new email=' + email + ' token=' + token);
+	console.log('register new email=' + email);
 
-	request.post(
-		'https://www.google.com/recaptcha/api/siteverify',
-		{
-			formData: {
-				secret: process.env.CAPTCHA_SECRET_KEY,
-				response: token,
-			},
-		},
-		async (err, response, body) => {
-			let captchaResponse = JSON.parse(body);
-			let score = parseFloat(captchaResponse.score);
-			console.log('capthca score: ' + body);
-			if (score >= 0) {
-				let list = await dbUtil.fetchEmails();
-				if (list.includes(email)) {
-					res.send({
-						success: false,
-						error: 'email already registered',
-					});
-					return;
-				}
-				await dbUtil.addEmail(email);
+	let list = await dbUtil.fetchEmails();
+	if (list.includes(email)) {
+		res.send({
+			success: false,
+			error: 'email already registered',
+		});
+		return;
+	}
+	await dbUtil.addEmail(email);
 
-				//send confirmation emails
-				try {
-					checker.sendNewUserNotification(email, score);
-					checker.sendRegEmail(email);
-				} catch (e) {
-					console.log('error sending new user email', e);
-				}
+	//send confirmation emails
+	try {
+		checker.sendNewUserNotification(email, score);
+		checker.sendRegEmail(email);
+	} catch (e) {
+		console.log('error sending new user email', e);
+	}
 
-				res.send({
-					success: true,
-				});
-			} else {
-				try {
-					checker.sendNewUserFailedNotification(email, score);
-				} catch (e) {
-					console.log('error sending email', e);
-				}
-				res.send({
-					success: false,
-					error: 'You seem to be a bot',
-				});
-			}
-		}
-	);
+	res.send({
+		success: true,
+	});
 });
 
 app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {

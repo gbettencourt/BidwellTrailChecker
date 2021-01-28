@@ -10,10 +10,8 @@ import Typography from '@material-ui/core/Typography';
 import { withStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import Link from '@material-ui/core/Link';
-import {
-	GoogleReCaptchaProvider,
-	GoogleReCaptcha,
-} from 'react-google-recaptcha-v3';
+import { Captcha } from '../components/Captcha';
+import { getRandomInt } from '../util/Util';
 
 const styles = (theme) => ({
 	paper: {
@@ -40,16 +38,19 @@ class SignUp extends Component {
 		super(props);
 		this.handleRegisterClick = this.handleRegisterClick.bind(this);
 		this.handleEmailChange = this.handleEmailChange.bind(this);
-		this.captchaVerify = this.captchaVerify.bind(this);
+		this.handleCaptchaChange = this.handleCaptchaChange.bind(this);
 		this.state = {
 			isRegistered: false,
 			isEmailValid: true,
+			isCaptchaValid: true,
 			email: '',
 			emailHelperText: '',
+			captcha: '',
+			captchaHelperText: '',
+			captchaCode: getRandomInt(1000, 9999),
 			regError: '',
 			trailStatus: '',
 			lastCheckTime: '',
-			token: '',
 		};
 	}
 
@@ -65,15 +66,26 @@ class SignUp extends Component {
 	}
 
 	handleRegisterClick() {
-		let isValidEmail = document.getElementById('email').validity.valid;
+		const isValidEmail = document.getElementById('email').validity.valid;
 		if (!isValidEmail) {
 			this.setState({
 				isEmailValid: false,
 				emailHelperText: 'Please enter a valid email',
 			});
+		}
+		const isValidCaptcha = this.verifyCaptcha(
+			document.getElementById('captcha').value
+		);
+		if (!isValidCaptcha) {
+			this.setState({
+				isCaptchaValid: false,
+				captchaHelperText: 'Please enter the number below',
+			});
+		}
+		if (!isValidEmail || !isValidCaptcha) {
 			return;
 		}
-		let postData = { email: this.state.email, token: this.state.token };
+		const postData = { email: this.state.email };
 		fetch('/api/registeremail', {
 			method: 'post',
 			body: JSON.stringify(postData),
@@ -93,8 +105,16 @@ class SignUp extends Component {
 		this.setState({ email: event.target.value });
 	}
 
-	captchaVerify(token) {
-		this.setState({ token });
+	handleCaptchaChange(event) {
+		const value = event.target.value;
+		const isValid = this.verifyCaptcha(value);
+		this.setState({ captcha: value, isCaptchaValid: isValid });
+	}
+
+	verifyCaptcha(value) {
+		return (
+			value && value !== '' && parseInt(value) === this.state.captchaCode
+		);
 	}
 
 	render() {
@@ -107,11 +127,6 @@ class SignUp extends Component {
 
 		return (
 			<Container component="main" maxWidth="xs">
-				<GoogleReCaptchaProvider
-					reCaptchaKey={process.env.REACT_APP_CAPTCHA_SITE_KEY}
-				>
-					<GoogleReCaptcha onVerify={this.captchaVerify} />
-				</GoogleReCaptchaProvider>
 				<CssBaseline />
 				<div className={classes.paper}>
 					<Avatar className={classes.avatar}>
@@ -167,6 +182,29 @@ class SignUp extends Component {
 											}
 											error={!this.state.isEmailValid}
 											onChange={this.handleEmailChange}
+										/>
+									</Grid>
+								</Grid>
+								<Grid container spacing={2}>
+									<Grid item xs={12}>
+										<TextField
+											variant="outlined"
+											required
+											fullWidth
+											id="captcha"
+											label="Enter Code Below"
+											name="captcha"
+											value={this.state.captcha}
+											helperText={
+												this.state.captchaHelperText
+											}
+											error={!this.state.isCaptchaValid}
+											onChange={this.handleCaptchaChange}
+										/>
+									</Grid>
+									<Grid item xs={12}>
+										<Captcha
+											chars={this.state.captchaCode.toString()}
 										/>
 									</Grid>
 								</Grid>
