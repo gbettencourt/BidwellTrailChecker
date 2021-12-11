@@ -1,29 +1,51 @@
-require('dotenv').config();
+import { Low, JSONFile } from "lowdb";
+export default class DbUtil {
+  constructor() {
+    this.db = new Low(new JSONFile("db.json"));
+  }
 
-const { Pool } = require('pg');
-const connectionString = `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE}`;
+  async fetchEmails() {
+    await this.db.read();
+    const users = this.db.data.users;
+    return users.map((r) => r.email);
+  }
 
-module.exports = class DbUtil {
-	constructor() {
-		this.pool = new Pool({
-			connectionString: connectionString
-		});
-	}
+  async fetchUsers() {
+    await this.db.read();
+    return this.db.data.users;
+  }
 
-	async fetchEmails() {
-		let { rows } = await this.pool.query('SELECT * FROM users');
-		return rows.map(r => r.email);
-	}
+  async addUser(email, phone) {
+    await this.db.read();
+    const nextId = this.db.data.users[this.db.data.users.length - 1].id + 1;
+    this.db.data.users.push({ id: nextId, email, phone });
+    await this.db.write();
+  }
 
-	async addEmail(email) {
-		await this.pool.query('INSERT INTO users (email) VALUES ($1)', [email]);
-	}
+  async removeUser(email) {
+    await this.db.read();
+    const users = this.db.data.users;
+    const index = users.findIndex((user) => user.email === email);
+    if (index > -1) {
+      users.splice(index, 1);
+    }
+    await this.db.write();
+  }
 
-	async removeEmail(email) {
-		await this.pool.query('DELETE FROM users WHERE email = ($1)', [email]);
-	}
+  async addEmail(email) {
+    await this.db.read();
+    const nextId = this.db.data.users[this.db.data.users.length - 1].id + 1;
+    this.db.data.users.push({ id: nextId, email, phone: "" });
+    await this.db.write();
+  }
 
-	close() {
-		this.pool.end();
-	}
-};
+  async removeEmail(email) {
+    await this.db.read();
+    const users = this.db.data.users;
+    const index = users.findIndex((user) => user.email === email);
+    if (index > -1) {
+      users.splice(index, 1);
+    }
+    await this.db.write();
+  }
+}
