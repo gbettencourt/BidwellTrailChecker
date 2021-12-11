@@ -11,7 +11,7 @@ export default class Checker {
   constructor() {
     this.config = {
       lastCheck: new Date(),
-      lastStatus: "Closed",
+      lastStatus: "NULL",
     };
     this.fetchStatus();
 
