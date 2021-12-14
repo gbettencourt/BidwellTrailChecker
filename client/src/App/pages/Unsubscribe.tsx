@@ -1,36 +1,16 @@
 import React, { Component } from "react";
-import Avatar from "@material-ui/core/Avatar";
-import Button from "@material-ui/core/Button";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import Grid from "@material-ui/core/Grid";
-import Box from "@material-ui/core/Box";
-import TextField from "@material-ui/core/TextField";
-import BikeIcon from "@material-ui/icons/DirectionsBike";
-import Typography from "@material-ui/core/Typography";
-import { withStyles } from "@material-ui/core/styles";
-import Container from "@material-ui/core/Container";
+import Avatar from "@mui/material/Avatar";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
+import BikeIcon from "@mui/icons-material/DirectionsBike";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-const styles = (theme) => ({
-  paper: {
-    marginTop: theme.spacing(8),
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  },
-  avatar: {
-    margin: theme.spacing(1),
-    backgroundColor: theme.palette.secondary.main,
-  },
-  form: {
-    width: "100%", // Fix IE 11 issue.
-    marginTop: theme.spacing(3),
-  },
-  submit: {
-    margin: theme.spacing(3, 0, 2),
-  },
-});
-
-type UnsubscribeProps = { classes: any };
+type UnsubscribeProps = {};
 type UnsubscribeState = {
   isEmailValid: boolean;
   email: string;
@@ -39,7 +19,10 @@ type UnsubscribeState = {
   unsubsribed: boolean;
 };
 
-class Unsubscribe extends Component<UnsubscribeProps, UnsubscribeState> {
+export default class Unsubscribe extends Component<
+  UnsubscribeProps,
+  UnsubscribeState
+> {
   constructor(props) {
     super(props);
     this.handleUnSubClick = this.handleUnSubClick.bind(this);
@@ -80,22 +63,29 @@ class Unsubscribe extends Component<UnsubscribeProps, UnsubscribeState> {
   }
 
   render() {
-    const { classes } = this.props;
+    const theme = createTheme();
     const unsubsribed = this.state.unsubsribed;
     return (
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-        <div className={classes.paper}>
-          <Avatar className={classes.avatar}>
-            <BikeIcon />
-          </Avatar>
-          {unsubsribed ? (
-            <Typography component="h1" variant="h5">
-              You have been unsubscribed
-            </Typography>
-          ) : (
-            <div>
-              <form className={classes.form} noValidate>
+      <ThemeProvider theme={theme}>
+        <Container component="main" maxWidth="xs">
+          <CssBaseline />
+          <Box
+            sx={{
+              marginTop: 8,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+              <BikeIcon />
+            </Avatar>
+            {unsubsribed ? (
+              <Typography component="h1" variant="h5">
+                You have been unsubscribed
+              </Typography>
+            ) : (
+              <Box component="form" noValidate sx={{ mt: 3 }}>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <TextField
@@ -118,7 +108,7 @@ class Unsubscribe extends Component<UnsubscribeProps, UnsubscribeState> {
                   fullWidth
                   variant="contained"
                   color="primary"
-                  className={classes.submit}
+                  sx={{ mt: 3, mb: 2 }}
                   onClick={this.handleUnSubClick}
                 >
                   Unsubscribe
@@ -127,18 +117,17 @@ class Unsubscribe extends Component<UnsubscribeProps, UnsubscribeState> {
                   fullWidth
                   variant="contained"
                   color="primary"
-                  className={classes.submit}
+                  sx={{ mt: 1, mb: 2 }}
                   onClick={this.handleCancelClick}
                 >
                   Cancel
                 </Button>
-              </form>
-            </div>
-          )}
-        </div>
-        <Box mt={5}></Box>
-      </Container>
+              </Box>
+            )}
+          </Box>
+          <Box mt={5}></Box>
+        </Container>
+      </ThemeProvider>
     );
   }
 }
-export default withStyles(styles as any)(Unsubscribe);

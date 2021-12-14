@@ -1,39 +1,19 @@
 import React, { Component } from "react";
-import Avatar from "@material-ui/core/Avatar";
-import Button from "@material-ui/core/Button";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import TextField from "@material-ui/core/TextField";
-import Grid from "@material-ui/core/Grid";
-import Box from "@material-ui/core/Box";
-import BikeIcon from "@material-ui/icons/DirectionsBike";
-import Typography from "@material-ui/core/Typography";
-import { withStyles } from "@material-ui/core/styles";
-import Container from "@material-ui/core/Container";
-import Link from "@material-ui/core/Link";
+import Avatar from "@mui/material/Avatar";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import TextField from "@mui/material/TextField";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import BikeIcon from "@mui/icons-material/DirectionsBike";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import Link from "@mui/material/Link";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Captcha } from "../components/Captcha";
 import { getRandomInt } from "../util/Util";
 
-const styles = (theme: any) => ({
-  paper: {
-    marginTop: theme.spacing(8),
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  },
-  avatar: {
-    margin: theme.spacing(1),
-    backgroundColor: theme.palette.secondary.main,
-  },
-  form: {
-    width: "100%", // Fix IE 11 issue.
-    marginTop: theme.spacing(3),
-  },
-  submit: {
-    margin: theme.spacing(3, 0, 2),
-  },
-});
-
-type SignUpProps = { classes: any };
+type SignUpProps = {};
 type SignUpState = {
   isRegistered: boolean;
   isEmailValid: boolean;
@@ -48,7 +28,7 @@ type SignUpState = {
   lastCheckTime: string;
 };
 
-class SignUp extends Component<SignUpProps, SignUpState> {
+export default class SignUp extends Component<SignUpProps, SignUpState> {
   constructor(props: SignUpProps) {
     super(props);
     this.handleRegisterClick = this.handleRegisterClick.bind(this);
@@ -132,110 +112,117 @@ class SignUp extends Component<SignUpProps, SignUpState> {
   }
 
   render() {
-    const { classes } = this.props;
     const isRegistered = this.state.isRegistered;
     const regError = this.state.regError;
     const trailStatusStyle = {
       color: this.state.trailStatus === "Open" ? "green" : "red",
     };
-
+    const theme = createTheme();
     return (
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-        <div className={classes.paper}>
-          <Avatar className={classes.avatar}>
-            <BikeIcon />
-          </Avatar>
-          {regError && (
-            <Typography component="h1" variant="h5">
-              Unable to register {regError}
-            </Typography>
-          )}
-          {isRegistered ? (
-            <Typography component="h1" variant="h5">
-              Your registration was successful!
-            </Typography>
-          ) : (
-            <div>
-              <Box mt={2}></Box>
+      <ThemeProvider theme={theme}>
+        <Container component="main" maxWidth="xs">
+          <CssBaseline />
+          <Box
+            sx={{
+              marginTop: 8,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+              <BikeIcon />
+            </Avatar>
+            {regError && (
               <Typography component="h1" variant="h5">
-                Current trail status:{" "}
-                <span style={trailStatusStyle}>{this.state.trailStatus}</span>
+                Unable to register {regError}
               </Typography>
-              <Typography component="h6" variant="h6">
-                Last checked:{" "}
-                <span>
-                  {new Date(this.state.lastCheckTime).toLocaleString()}
-                </span>
-              </Typography>
-              <Box mt={5}></Box>
+            )}
+            {isRegistered ? (
               <Typography component="h1" variant="h5">
-                Enter your email address to get notifications when the Upper
-                Bidwell Park trail status changes:
+                Your registration was successful!
               </Typography>
-              <form className={classes.form} noValidate>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      variant="outlined"
-                      required
-                      fullWidth
-                      id="email"
-                      type="email"
-                      label="Email Address"
-                      name="email"
-                      autoComplete="email"
-                      value={this.state.email}
-                      helperText={this.state.emailHelperText}
-                      error={!this.state.isEmailValid}
-                      onChange={this.handleEmailChange}
-                    />
+            ) : (
+              <div>
+                <Box mt={2}></Box>
+                <Typography component="h1" variant="h5">
+                  Current trail status:{" "}
+                  <span style={trailStatusStyle}>{this.state.trailStatus}</span>
+                </Typography>
+                <Typography component="h6" variant="h6">
+                  Last checked:{" "}
+                  <span>
+                    {new Date(this.state.lastCheckTime).toLocaleString()}
+                  </span>
+                </Typography>
+                <Box mt={5}></Box>
+                <Typography component="h1" variant="h5">
+                  Enter your email address to get notifications when the Upper
+                  Bidwell Park trail status changes:
+                </Typography>
+                <Box component="form" noValidate sx={{ mt: 3 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        variant="outlined"
+                        required
+                        fullWidth
+                        id="email"
+                        type="email"
+                        label="Email Address"
+                        name="email"
+                        autoComplete="email"
+                        value={this.state.email}
+                        helperText={this.state.emailHelperText}
+                        error={!this.state.isEmailValid}
+                        onChange={this.handleEmailChange}
+                      />
+                    </Grid>
                   </Grid>
-                </Grid>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      variant="outlined"
-                      required
-                      fullWidth
-                      id="captcha"
-                      type="number"
-                      label="Enter Code Below"
-                      name="captcha"
-                      value={this.state.captcha}
-                      helperText={this.state.captchaHelperText}
-                      error={!this.state.isCaptchaValid}
-                      onChange={this.handleCaptchaChange}
-                    />
+                  <Grid container sx={{ mt: 2 }}>
+                    <Grid item xs={12}>
+                      <TextField
+                        variant="outlined"
+                        required
+                        fullWidth
+                        id="captcha"
+                        type="number"
+                        label="Enter Code Below"
+                        name="captcha"
+                        value={this.state.captcha}
+                        helperText={this.state.captchaHelperText}
+                        error={!this.state.isCaptchaValid}
+                        onChange={this.handleCaptchaChange}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sx={{ mt: 2 }}>
+                      <Captcha chars={this.state.captchaCode.toString()} />
+                    </Grid>
                   </Grid>
-                  <Grid item xs={12}>
-                    <Captcha chars={this.state.captchaCode.toString()} />
-                  </Grid>
-                </Grid>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  color="primary"
-                  className={classes.submit}
-                  onClick={this.handleRegisterClick}
-                >
-                  Sign Up
-                </Button>
-              </form>
-            </div>
-          )}
-        </div>
-        <Box mt={2}></Box>
-        <Box>
-          <Link href="Unsubscribe">Unsubscribe</Link>
-        </Box>
-        <Box>
-          <Link href="https://www.chico.ca.us/park-trails">
-            Park Trail Page
-          </Link>
-        </Box>
-      </Container>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 3, mb: 2 }}
+                    onClick={this.handleRegisterClick}
+                  >
+                    Sign Up
+                  </Button>
+                </Box>
+              </div>
+            )}
+          </Box>
+          <Box mt={2}></Box>
+          <Box>
+            <Link href="Unsubscribe">Unsubscribe</Link>
+          </Box>
+          <Box>
+            <Link href="https://www.chico.ca.us/park-trails">
+              Park Trail Page
+            </Link>
+          </Box>
+        </Container>
+      </ThemeProvider>
     );
   }
 }
-export default withStyles(styles as any)(SignUp);
