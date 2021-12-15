@@ -172,7 +172,7 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
               alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+            <Avatar sx={{ m: 1, bgcolor: "primary.main" }}>
               <BikeIcon />
             </Avatar>
             {regError && (

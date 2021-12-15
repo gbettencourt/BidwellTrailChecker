@@ -79,7 +79,7 @@ export default class Unsubscribe extends Component<
               alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+            <Avatar sx={{ m: 1, bgcolor: "primary.main" }}>
               <BikeIcon />
             </Avatar>
             {unsubsribed ? (
