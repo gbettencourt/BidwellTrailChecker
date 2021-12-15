@@ -1,6 +1,5 @@
-import { AccountCircle, GitHub } from "@mui/icons-material";
+import { GitHub } from "@mui/icons-material";
 import { AppBar, Toolbar, IconButton, Typography } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import React, { Component } from "react";
 import { Route, Routes, BrowserRouter } from "react-router-dom";
 import "./App.css";
