@@ -36,7 +36,7 @@ class App extends Component {
 
 const Layout = ({ children }) => (
   <div>
-    <AppBar position="static">
+    <AppBar position="sticky">
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           Bidwell Trail Checker

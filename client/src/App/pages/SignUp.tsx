@@ -229,7 +229,7 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
                             name="jason"
                           />
                         }
-                        label="Receive SMS Message"
+                        label="Receive Text Messages"
                       />
                     </Grid>
                     {this.state.sendSms && (
