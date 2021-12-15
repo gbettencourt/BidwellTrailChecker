@@ -17,7 +17,10 @@ export default class DbUtil {
 
   async addUser(email, phone) {
     await this.db.read();
-    const nextId = this.db.data.users[this.db.data.users.length - 1].id + 1;
+    const nextId =
+      this.db.data.users.length > 0
+        ? this.db.data.users[this.db.data.users.length - 1].id + 1
+        : 1;
     this.db.data.users.push({ id: nextId, email, phone });
     await this.db.write();
   }
@@ -32,20 +35,7 @@ export default class DbUtil {
     await this.db.write();
   }
 
-  async addEmail(email) {
-    await this.db.read();
-    const nextId = this.db.data.users[this.db.data.users.length - 1].id + 1;
-    this.db.data.users.push({ id: nextId, email, phone: "" });
-    await this.db.write();
-  }
-
-  async removeEmail(email) {
-    await this.db.read();
-    const users = this.db.data.users;
-    const index = users.findIndex((user) => user.email === email);
-    if (index > -1) {
-      users.splice(index, 1);
-    }
+  async save() {
     await this.db.write();
   }
 }

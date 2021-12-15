@@ -1,7 +1,7 @@
 import express from "express";
 import winston from "winston";
 import expressWinston from "express-winston";
-import { check, validationResult } from "express-validator";
+import { body, check, validationResult } from "express-validator";
 import { join, dirname } from "path";
 import Checker from "./checker.js";
 import DbUtil from "./db.js";
@@ -44,41 +44,52 @@ app.get("/api/trailstatus", (req, res) => {
   res.json(checker.currentStatus());
 });
 
-app.post("/api/registeremail", [check("email").isEmail()], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    console.log("registeremail invalid email=" + req.body);
+app.post(
+  "/api/registeremail",
+  [
+    check("email").isEmail(),
+    check("phone")
+      .if(body("phone").exists({ checkFalsy: true }))
+      .isMobilePhone(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.send({
+        success: false,
+        error: "invalid email/phone",
+      });
+      return;
+    }
+    const email = req.body.email;
+    const phone = req.body.phone;
+    console.log("register new email=" + email);
+    console.log("register new phone=" + phone);
+
+    const users = await dbUtil.fetchUsers();
+    const existingUser = users.find((user) => user.email === email);
+
+    if (existingUser) {
+      console.log(`updating existing user, email=${email}, phone=${phone}`);
+      existingUser.phone = phone;
+      await dbUtil.save();
+    } else {
+      await dbUtil.addUser(email, phone);
+    }
+
+    //send confirmation emails
+    try {
+      checker.sendNewUserNotification(email, phone, existingUser);
+      checker.sendRegEmail(email);
+    } catch (e) {
+      console.log("error sending new user email", e);
+    }
+
     res.send({
-      success: false,
-      error: "invalid email",
+      success: true,
     });
-    return;
   }
-  const email = req.body.email;
-  console.log("register new email=" + email);
-
-  const list = await dbUtil.fetchEmails();
-  if (list.includes(email)) {
-    res.send({
-      success: false,
-      error: "email already registered",
-    });
-    return;
-  }
-  await dbUtil.addEmail(email);
-
-  //send confirmation emails
-  try {
-    checker.sendNewUserNotification(email);
-    checker.sendRegEmail(email);
-  } catch (e) {
-    console.log("error sending new user email", e);
-  }
-
-  res.send({
-    success: true,
-  });
-});
+);
 
 app.post("/api/rmemail", [check("email").isEmail()], async (req, res) => {
   console.log(req.body);
@@ -99,7 +110,7 @@ app.post("/api/rmemail", [check("email").isEmail()], async (req, res) => {
     console.log("error sending email", e);
   }
 
-  await dbUtil.removeEmail(email);
+  await dbUtil.removeUser(email);
   res.send({
     success: true,
   });

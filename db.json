@@ -1,3 +1,14 @@
 {
-  "users": []
+  "users": [
+    {
+      "id": 1,
+      "email": "test@test.com",
+      "phone": "5308642942"
+    },
+    {
+      "id": 2,
+      "email": "test@test2.com",
+      "phone": "5306801582"
+    }
+  ]
 }

@@ -114,12 +114,12 @@ export default class Checker {
     });
   }
 
-  sendNewUserNotification(email) {
+  sendNewUserNotification(email, phone, existingUser) {
     this.getTransporter().sendMail({
       from: process.env.SMTP_FROM_EMAIL,
       to: process.env.SMTP_ADMIN_EMAIL,
-      subject: "New user registered",
-      text: "New user: " + email,
+      subject: existingUser ? "User updated" : "New user registered",
+      text: `user details: email=${email}, phone=${phone}`,
     });
   }
 

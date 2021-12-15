@@ -1,25 +1,37 @@
-import React, { Component } from "react";
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
 import BikeIcon from "@mui/icons-material/DirectionsBike";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import Link from "@mui/material/Link";
+import {
+  FormControlLabel,
+  Switch,
+  Avatar,
+  Box,
+  Button,
+  Container,
+  CssBaseline,
+  Grid,
+  Link,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import React, { Component } from "react";
 import { Captcha } from "../components/Captcha";
-import { getRandomInt } from "../util/Util";
+import {
+  cleanPhoneNumber,
+  formatPhoneNumber,
+  getRandomInt,
+} from "../util/Util";
 
 type SignUpProps = {};
 type SignUpState = {
   isRegistered: boolean;
   isEmailValid: boolean;
   isCaptchaValid: boolean;
+  isPhoneValid: boolean;
+  sendSms: boolean;
   email: string;
   emailHelperText: string;
+  phone: string;
+  phoneHelperText: string;
   captcha: string;
   captchaHelperText: string;
   captchaCode: number;
@@ -34,12 +46,19 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
     this.handleRegisterClick = this.handleRegisterClick.bind(this);
     this.handleEmailChange = this.handleEmailChange.bind(this);
     this.handleCaptchaChange = this.handleCaptchaChange.bind(this);
+    this.handlePhoneChange = this.handlePhoneChange.bind(this);
+    this.handleSendSmsChange = this.handleSendSmsChange.bind(this);
+
     this.state = {
       isRegistered: false,
       isEmailValid: true,
       isCaptchaValid: true,
+      sendSms: false,
       email: "",
       emailHelperText: "",
+      phone: "",
+      phoneHelperText: "",
+      isPhoneValid: true,
       captcha: "",
       captchaHelperText: "",
       captchaCode: getRandomInt(1000, 9999),
@@ -69,6 +88,18 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
         emailHelperText: "Please enter a valid email",
       });
     }
+    const phoneInput = document.getElementById("phone") as any;
+    const isValidPhone = this.state.sendSms
+      ? phoneInput.validity?.valid &&
+        cleanPhoneNumber(phoneInput.value).length === 10
+      : true;
+
+    if (!isValidPhone) {
+      this.setState({
+        isPhoneValid: false,
+        phoneHelperText: "Please enter a phone number to receive sms messages",
+      });
+    }
     const isValidCaptcha = this.verifyCaptcha(
       (document.getElementById("captcha") as HTMLInputElement).value
     );
@@ -81,7 +112,10 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
     if (!isValidEmail || !isValidCaptcha) {
       return;
     }
-    const postData = { email: this.state.email };
+    const postData = {
+      email: this.state.email,
+      phone: this.state.sendSms ? cleanPhoneNumber(this.state.phone) : "",
+    };
     fetch("/api/registeremail", {
       method: "post",
       body: JSON.stringify(postData),
@@ -99,6 +133,14 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
 
   handleEmailChange(event) {
     this.setState({ email: event.target.value });
+  }
+
+  handlePhoneChange(event) {
+    this.setState({ phone: formatPhoneNumber(event.target.value) });
+  }
+
+  handleSendSmsChange(event) {
+    this.setState({ sendSms: event.target.checked });
   }
 
   handleCaptchaChange(event) {
@@ -178,6 +220,36 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
                         onChange={this.handleEmailChange}
                       />
                     </Grid>
+                    <Grid item xs={12}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={this.state.sendSms}
+                            onChange={this.handleSendSmsChange}
+                            name="jason"
+                          />
+                        }
+                        label="Receive SMS Message"
+                      />
+                    </Grid>
+                    {this.state.sendSms && (
+                      <Grid item xs={12}>
+                        <TextField
+                          variant="outlined"
+                          required
+                          fullWidth
+                          id="phone"
+                          type="text"
+                          label="Phone Number"
+                          name="phone"
+                          autoComplete="phone"
+                          value={this.state.phone}
+                          helperText={this.state.phoneHelperText}
+                          error={!this.state.isPhoneValid}
+                          onChange={this.handlePhoneChange}
+                        />
+                      </Grid>
+                    )}
                   </Grid>
                   <Grid container sx={{ mt: 2 }}>
                     <Grid item xs={12}>
@@ -203,7 +275,7 @@ export default class SignUp extends Component<SignUpProps, SignUpState> {
                     fullWidth
                     variant="contained"
                     color="primary"
-                    sx={{ mt: 3, mb: 2 }}
+                    sx={{ mt: 1, mb: 2 }}
                     onClick={this.handleRegisterClick}
                   >
                     Sign Up
