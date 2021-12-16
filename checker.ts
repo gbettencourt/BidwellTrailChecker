@@ -28,12 +28,9 @@ export default class Checker {
     request(process.env.TRAIL_STATUS_URL, {}, async (err, res, body) => {
       console.log("fetch complete, parsing...");
       const root = parse(body);
-
+      const tableElem = root.querySelector("table td").parentNode;
       let trailStatus =
-        root
-          .querySelector("table td")
-          .parentNode.rawText.toLowerCase()
-          .indexOf("open") === -1
+        tableElem.rawText.toLowerCase().indexOf("open") === -1
           ? "Closed"
           : "Open";
 
