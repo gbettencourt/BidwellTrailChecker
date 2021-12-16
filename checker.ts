@@ -1,5 +1,5 @@
 import request from "request";
-import HTMLParser from "node-html-parser";
+import { parse } from "node-html-parser";
 import nodemailer from "nodemailer";
 import schedule from "node-schedule";
 import DbUtil from "./db.js";
@@ -8,6 +8,7 @@ import twilio from "twilio";
 dotenv.config();
 
 export default class Checker {
+  config;
   constructor() {
     this.config = {
       lastCheck: new Date(),
@@ -26,7 +27,7 @@ export default class Checker {
 
     request(process.env.TRAIL_STATUS_URL, {}, async (err, res, body) => {
       console.log("fetch complete, parsing...");
-      const root = HTMLParser.parse(body);
+      const root = parse(body);
 
       let trailStatus =
         root

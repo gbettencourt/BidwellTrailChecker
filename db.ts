@@ -1,5 +1,6 @@
 import { Low, JSONFile } from "lowdb";
 export default class DbUtil {
+  db;
   constructor() {
     this.db = new Low(new JSONFile("db.json"));
   }

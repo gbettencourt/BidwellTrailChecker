@@ -50,7 +50,7 @@ app.post(
     check("email").isEmail(),
     check("phone")
       .if(body("phone").exists({ checkFalsy: true }))
-      .isMobilePhone(),
+      .isMobilePhone("en-US"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
