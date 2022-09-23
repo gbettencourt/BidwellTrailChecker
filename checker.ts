@@ -1,10 +1,11 @@
-import request from "request";
 import { parse } from "node-html-parser";
 import nodemailer from "nodemailer";
 import schedule from "node-schedule";
 import DbUtil from "./db.js";
 import dotenv from "dotenv";
 import twilio from "twilio";
+import fetch from "node-fetch";
+
 dotenv.config();
 
 export default class Checker {
@@ -14,7 +15,6 @@ export default class Checker {
       lastCheck: new Date(),
       lastStatus: "NULL",
     };
-    this.fetchStatus();
 
     //check every 5 minutes
     schedule.scheduleJob("*/5 * * * *", () => {
@@ -22,32 +22,34 @@ export default class Checker {
     });
   }
 
-  fetchStatus() {
+  public async fetchStatus() {
     console.log("fetching status HTML page");
 
-    request(process.env.TRAIL_STATUS_URL, {}, async (err, res, body) => {
-      console.log("fetch complete, parsing...");
-      const root = parse(body);
-      const tableElem = root.querySelector("table td").parentNode;
-      let trailStatus =
-        tableElem.rawText.toLowerCase().indexOf("open") === -1
-          ? "Closed"
-          : "Open";
+    const response = await fetch(process.env.TRAIL_STATUS_URL);
+    const body = await response.text();
 
-      console.log("processing complete, trail status: " + trailStatus);
+    console.log("fetch complete, parsing...");
 
-      if (trailStatus != "") {
-        if (
-          trailStatus != this.config.lastStatus &&
-          this.config.lastStatus != "NULL"
-        ) {
-          await this.sendNotifications(trailStatus);
-        }
+    const root = parse(body);
+    const tableElem = root.querySelector("table td").parentNode;
+    let trailStatus =
+      tableElem.rawText.toLowerCase().indexOf("open") === -1
+        ? "Closed"
+        : "Open";
 
-        this.config.lastStatus = trailStatus;
-        this.config.lastCheck = new Date();
+    console.log(`processing complete, trail status: ${trailStatus}`);
+
+    if (trailStatus != "") {
+      if (
+        trailStatus != this.config.lastStatus &&
+        this.config.lastStatus != "NULL"
+      ) {
+        await this.sendNotifications(trailStatus);
       }
-    });
+
+      this.config.lastStatus = trailStatus;
+      this.config.lastCheck = new Date();
+    }
   }
 
   async sendNotifications(trailStatus) {
@@ -57,32 +59,37 @@ export default class Checker {
     console.log("sending notifications");
 
     const subject = "Bidwell Trail Status Update";
-    const text = "Trail status changed to: " + trailStatus;
+    const text = `Trail status changed to: ${trailStatus}`;
 
     try {
       const smsClient = twilio(process.env.SMS_SID, process.env.SMS_TOKEN);
-      const transporter = this.getTransporter();
+      const transporter = this.getTransporter(true);
 
       for (const user of users) {
-        console.log("sending notification to:" + user.email);
-        const info = await transporter.sendMail({
-          from: process.env.SMTP_FROM_EMAIL,
-          to: user.email,
-          subject,
-          text,
-        });
-        console.log("Message sent: %s", info.messageId);
+        console.log(`sending notification to: ${user.email}`);
+
+        try {
+          const info = await transporter.sendMail({
+            from: process.env.SMTP_FROM_EMAIL,
+            to: user.email,
+            subject,
+            text,
+          });
+          console.log(`Message sent: ${info.messageId}`);
+        } catch (e) {
+          console.log(e);
+        }
 
         if (user.phone) {
           console.log(`${user.email} has phone ${user.phone}, sending sms`);
-          smsClient.messages
-            .create({
+
+          try {
+            const message = await smsClient.messages.create({
               body: `${subject}. ${text}`,
               from: `+1${process.env.SMS_FROM}`,
               to: `+1${user.phone}`,
-            })
-            .then((message) => console.log(message.sid));
-          try {
+            });
+            console.log(message.sid);
           } catch (e) {
             console.log(e);
           }
@@ -100,11 +107,12 @@ export default class Checker {
     };
   }
 
-  getTransporter() {
+  getTransporter(pool = false) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
       secure: false,
+      pool,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PWD,
@@ -126,7 +134,7 @@ export default class Checker {
       from: process.env.SMTP_FROM_EMAIL,
       to: process.env.SMTP_ADMIN_EMAIL,
       subject: "User unsubscribed",
-      text: "user: " + email,
+      text: `user: ${email}`,
     });
   }
 
@@ -135,10 +143,7 @@ export default class Checker {
       from: process.env.SMTP_FROM_EMAIL,
       to: email,
       subject: "Trail Checker Registration",
-      text:
-        "Thank you for registering!  The current trail status is " +
-        this.config.lastStatus +
-        ". We'll send you an update when that changes!",
+      text: `Thank you for registering!  The current trail status is ${this.config.lastStatus}. We'll send you an update when that changes!`,
     });
   }
 }
