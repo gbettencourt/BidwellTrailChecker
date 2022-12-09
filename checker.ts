@@ -109,9 +109,7 @@ export default class Checker {
 
   getTransporter(pool = false) {
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
+      service: "Gmail",
       pool,
       auth: {
         user: process.env.SMTP_USER,
