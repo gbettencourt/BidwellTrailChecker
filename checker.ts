@@ -10,16 +10,17 @@ dotenv.config();
 
 export default class Checker {
 	config;
-	constructor() {
+	constructor(runScheduler = true) {
 		this.config = {
 			lastCheck: new Date(),
 			lastStatus: 'NULL'
 		};
-
-		//check every 5 minutes
-		schedule.scheduleJob('*/5 * * * *', () => {
-			this.fetchStatus();
-		});
+		if (runScheduler) {
+			//check every 5 minutes
+			schedule.scheduleJob('*/5 * * * *', () => {
+				this.fetchStatus();
+			});
+		}
 	}
 
 	public async fetchStatus() {
@@ -88,6 +89,9 @@ export default class Checker {
 						console.log(e);
 					}
 				}
+
+				// rate limit
+				await this.pause();
 			}
 		} catch (e) {
 			console.log('error sending emails', e);
@@ -137,5 +141,9 @@ export default class Checker {
 			subject: 'Trail Checker Registration',
 			text: `Thank you for registering!  The current trail status is ${this.config.lastStatus}. We'll send you an update when that changes!`
 		});
+	}
+
+	async pause() {
+		await new Promise((resolve) => setTimeout(resolve, 2000));
 	}
 }
