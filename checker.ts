@@ -17,7 +17,7 @@ export default class Checker {
 		};
 		if (runScheduler) {
 			//check every 5 minutes
-			schedule.scheduleJob('*/5 * * * *', () => {
+			schedule.scheduleJob('*/15 * * * *', () => {
 				this.fetchStatus();
 			});
 		}
