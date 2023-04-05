@@ -8,15 +8,22 @@ import fetch from 'node-fetch';
 
 dotenv.config();
 
+type Config = {
+	lastCheck: Date;
+	lastStatus: string;
+	checking: boolean;
+};
+
 export default class Checker {
-	config;
+	config: Config;
 	constructor(runScheduler = true) {
 		this.config = {
 			lastCheck: new Date(),
-			lastStatus: 'NULL'
+			lastStatus: 'NULL',
+			checking: false
 		};
 		if (runScheduler) {
-			//check every 5 minutes
+			//check every 15 minutes
 			schedule.scheduleJob('*/15 * * * *', () => {
 				this.fetchStatus();
 			});
@@ -26,24 +33,34 @@ export default class Checker {
 	public async fetchStatus() {
 		console.log('fetching status HTML page');
 
-		const response = await fetch(process.env.TRAIL_STATUS_URL);
-		const body = await response.text();
+		if (this.config.checking) {
+			console.log('checking in process, skipping');
+			return;
+		}
 
-		console.log('fetch complete, parsing...');
+		this.config.checking = true;
+		try {
+			const response = await fetch(process.env.TRAIL_STATUS_URL);
+			const body = await response.text();
 
-		const root = parse(body);
-		const tableElem = root.querySelector('table td').parentNode;
-		let trailStatus = tableElem.rawText.toLowerCase().indexOf('open') === -1 ? 'Closed' : 'Open';
+			console.log('fetch complete, parsing...');
 
-		console.log(`processing complete, trail status: ${trailStatus}`);
+			const root = parse(body);
+			const tableElem = root.querySelector('table td').parentNode;
+			let trailStatus = tableElem.rawText.toLowerCase().indexOf('open') === -1 ? 'Closed' : 'Open';
 
-		if (trailStatus != '') {
-			if (trailStatus != this.config.lastStatus && this.config.lastStatus != 'NULL') {
-				await this.sendNotifications(trailStatus);
+			console.log(`processing complete, trail status: ${trailStatus}`);
+
+			if (trailStatus != '') {
+				if (trailStatus != this.config.lastStatus && this.config.lastStatus != 'NULL') {
+					await this.sendNotifications(trailStatus);
+				}
+
+				this.config.lastStatus = trailStatus;
+				this.config.lastCheck = new Date();
 			}
-
-			this.config.lastStatus = trailStatus;
-			this.config.lastCheck = new Date();
+		} finally {
+			this.config.checking = false;
 		}
 	}
 

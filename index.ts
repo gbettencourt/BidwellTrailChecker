@@ -123,6 +123,8 @@ app.get('*', (req, res) => {
 
 //init trail checker
 const checker = new Checker();
+checker.fetchStatus();
+
 //init db client
 const dbUtil = new DbUtil();
 
