@@ -46,7 +46,8 @@ export default class Checker {
 			console.log('fetch complete, parsing...');
 
 			const root = parse(body);
-			const tableElem = root.querySelector('table td').parentNode;
+			const tableElem = root.querySelector('table').parentNode;
+
 			let trailStatus = tableElem.rawText.toLowerCase().indexOf('open') === -1 ? 'Closed' : 'Open';
 
 			console.log(`processing complete, trail status: ${trailStatus}`);
