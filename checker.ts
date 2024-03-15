@@ -81,16 +81,20 @@ export default class Checker {
 			for (const user of users) {
 				console.log(`sending notification to: ${user.email}`);
 
-				try {
-					const info = await transporter.sendMail({
-						from: process.env.SMTP_FROM_EMAIL,
-						to: user.email,
-						subject,
-						text
-					});
-					console.log(`Message sent: ${info.messageId}`);
-				} catch (e) {
-					console.log(e);
+				if (user.skipMail) {
+					console.log('skipMail=true');
+				} else {
+					try {
+						const info = await transporter.sendMail({
+							from: process.env.SMTP_FROM_EMAIL,
+							to: user.email,
+							subject,
+							text
+						});
+						console.log(`Message sent: ${info.messageId}`);
+					} catch (e) {
+						console.log(e);
+					}
 				}
 
 				if (user.phone) {

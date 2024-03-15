@@ -7,6 +7,7 @@ export type User = {
 	id: number;
 	email: string;
 	phone: string;
+	skipMail?: boolean;
 };
 
 export default class DbUtil {
