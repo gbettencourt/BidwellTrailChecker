@@ -60,6 +60,8 @@ export default class Checker {
 				this.config.lastStatus = trailStatus;
 				this.config.lastCheck = new Date();
 			}
+		} catch (e) {
+			console.log(e);
 		} finally {
 			this.config.checking = false;
 		}
