@@ -1,61 +1,60 @@
-import { GitHub } from "@mui/icons-material";
-import { AppBar, Toolbar, IconButton, Typography } from "@mui/material";
-import React, { Component } from "react";
-import { Route, Routes, BrowserRouter } from "react-router-dom";
-import "./App.css";
-import SignUp from "./pages/SignUp";
-import Unsubscribe from "./pages/Unsubscribe";
+import React, { ReactNode } from 'react';
+import { GitHub } from '@mui/icons-material';
+import { AppBar, Toolbar, IconButton, Typography } from '@mui/material';
+import { Route, Routes, BrowserRouter } from 'react-router-dom';
+import { SignUp } from './pages/SignUp';
+import { Unsubscribe } from './pages/Unsubscribe';
 
-class App extends Component {
-  render() {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Layout>
-                <SignUp />
-              </Layout>
-            }
-          />
-          <Route
-            path="/unsubscribe"
-            element={
-              <Layout>
-                <Unsubscribe />
-              </Layout>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    );
-  }
-}
+export const App: React.FC = () => {
+	return (
+		<BrowserRouter>
+			<Routes>
+				<Route
+					path="/"
+					element={
+						<Layout>
+							<SignUp />
+						</Layout>
+					}
+				/>
+				<Route
+					path="/unsubscribe"
+					element={
+						<Layout>
+							<Unsubscribe />
+						</Layout>
+					}
+				/>
+			</Routes>
+		</BrowserRouter>
+	);
+};
 
-const Layout = ({ children }) => (
-  <div>
-    <AppBar position="sticky">
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Bidwell Trail Checker
-        </Typography>
+type LayoutProps = {
+	children: ReactNode;
+};
 
-        <div>
-          <IconButton
-            size="large"
-            aria-label="github link"
-            aria-controls="menu-appbar"
-            color="inherit"
-            href="https://github.com/gbettencourt/BidwellTrailChecker"
-          >
-            <GitHub />
-          </IconButton>
-        </div>
-      </Toolbar>
-    </AppBar>
-    {children}
-  </div>
-);
+const Layout: React.FC<LayoutProps> = ({ children }) => {
+	return (
+		<div>
+			<AppBar position="sticky">
+				<Toolbar>
+					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+						Bidwell Trail Checker
+					</Typography>
 
-export default App;
+					<div>
+						<IconButton
+							size="large"
+							aria-label="github link"
+							color="inherit"
+							href="https://github.com/gbettencourt/BidwellTrailChecker">
+							<GitHub />
+						</IconButton>
+					</div>
+				</Toolbar>
+			</AppBar>
+			{children}
+		</div>
+	);
+};
