@@ -28,6 +28,7 @@ export const SignUp: React.FC = () => {
 		watch,
 		setError,
 		clearErrors,
+		setValue,
 		formState: { errors }
 	} = useForm<FormValues>({
 		defaultValues: {
@@ -39,7 +40,6 @@ export const SignUp: React.FC = () => {
 	});
 
 	const sendSms = watch('sendSms');
-	const phoneValue = watch('phone');
 
 	useEffect(() => {
 		const fetchTrailStatus = async () => {
@@ -175,10 +175,9 @@ export const SignUp: React.FC = () => {
 												type="text"
 												label="Phone Number"
 												autoComplete="phone"
-												value={phoneValue}
 												onChange={(e) => {
 													const formatted = formatPhoneNumber(e.target.value);
-													e.target.value = formatted; // update value for RHF
+													setValue('phone', formatted, { shouldValidate: true });
 												}}
 												error={!!errors.phone}
 												helperText={errors.phone?.message}
