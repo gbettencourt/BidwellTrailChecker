@@ -8,28 +8,27 @@
 		"start": "node dist/index.js",
 		"clean": "rm -rf dist",
 		"build": "npm run clean && tsc && rsync -a client dist --exclude node_modules",
-		"check": "node dist/checker.js"
+		"check": "node dist/checker.js",
+		"check-types": "tsc --noEmit"
 	},
 	"keywords": [],
 	"author": "Gary Bettencourt",
 	"license": "MIT",
 	"dependencies": {
-		"dotenv": "^16.0.0",
-		"express": "^4.17.1",
-		"express-validator": "^6.3.1",
-		"express-winston": "^4.0.2",
-		"lowdb": "^3.0.0",
-		"node-fetch": "3.2.10",
-		"node-html-parser": "6.1.0",
-		"node-schedule": "^2.1.0",
+		"dotenv": "^17.2.3",
+		"express": "^5.1.0",
+		"express-validator": "^7.2.1",
+		"express-winston": "^4.2.0",
+		"lowdb": "^7.0.1",
+		"node-html-parser": "^7.0.1",
+		"node-schedule": "^2.1.1",
 		"nodemailer": "^7.0.6",
-		"string-template": "^1.0.0",
-		"twilio": "^3.71.3",
-		"winston": "^3.2.1"
+		"twilio": "^5.10.2",
+		"winston": "^3.18.3"
 	},
 	"devDependencies": {
-		"@types/node": "^17.0.0",
-		"typescript": "^4.1.2"
+		"@types/node": "^24.7.1",
+		"typescript": "^5.9.3"
 	},
 	"prettier": {
 		"printWidth": 140,

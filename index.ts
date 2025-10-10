@@ -117,7 +117,7 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
 });
 
 // Handles any requests that don't match the ones above
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
 	res.sendFile(join(__dirname + '/client/build/index.html'));
 });
 

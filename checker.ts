@@ -4,7 +4,6 @@ import schedule from 'node-schedule';
 import DbUtil, { User } from './db.js';
 import dotenv from 'dotenv';
 import twilio from 'twilio';
-import fetch from 'node-fetch';
 
 dotenv.config();
 

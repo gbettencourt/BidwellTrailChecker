@@ -1,4 +1,5 @@
-import { Low, JSONFile } from 'lowdb';
+import { Low } from 'lowdb';
+import { JSONFile } from 'lowdb/node';
 
 type UserDb = {
 	users: User[];
@@ -13,7 +14,7 @@ export type User = {
 export default class DbUtil {
 	db: Low<UserDb>;
 	constructor() {
-		this.db = new Low<UserDb>(new JSONFile('db.json'));
+		this.db = new Low<UserDb>(new JSONFile('db.json'), { users: [] });
 	}
 
 	async fetchEmails(): Promise<string[]> {
