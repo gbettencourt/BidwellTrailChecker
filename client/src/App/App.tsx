@@ -4,6 +4,7 @@ import { AppBar, Toolbar, IconButton, Typography } from '@mui/material';
 import { Route, Routes, BrowserRouter } from 'react-router-dom';
 import { SignUp } from './pages/SignUp';
 import { Unsubscribe } from './pages/Unsubscribe';
+import { AdminPage } from './pages/Admin';
 
 export const App: React.FC = () => {
 	return (
@@ -22,6 +23,14 @@ export const App: React.FC = () => {
 					element={
 						<Layout>
 							<Unsubscribe />
+						</Layout>
+					}
+				/>
+				<Route
+					path="/admin"
+					element={
+						<Layout>
+							<AdminPage />
 						</Layout>
 					}
 				/>

@@ -4,6 +4,7 @@ import schedule from 'node-schedule';
 import DbUtil, { User } from './db.js';
 import dotenv from 'dotenv';
 import twilio from 'twilio';
+import { readOverride } from './override-util.js';
 
 dotenv.config();
 
@@ -32,8 +33,8 @@ export default class Checker {
 	public async fetchStatus() {
 		console.log('fetching status HTML page');
 
-		if (this.config.checking) {
-			console.log('checking in process, skipping');
+		if (this.config.checking || readOverride() !== 'auto') {
+			console.log('checking in process or override active, skipping');
 			return;
 		}
 
@@ -64,6 +65,12 @@ export default class Checker {
 		} finally {
 			this.config.checking = false;
 		}
+	}
+
+	public manualOverride(value: 'open' | 'closed') {
+		this.config.lastStatus = value === 'open' ? 'Open' : 'Closed';
+		this.config.lastCheck = new Date();
+		this.sendNotifications(this.config.lastStatus);
 	}
 
 	async sendNotifications(trailStatus: string) {

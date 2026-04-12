@@ -7,9 +7,17 @@ import Checker from './checker.js';
 import DbUtil from './db.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import adminRouter from './admin-router.js';
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+//init trail checker
+const checker = new Checker();
+checker.fetchStatus();
+
+//init db client
+const dbUtil = new DbUtil();
 
 const app = express();
 app.use(express.json());
@@ -116,17 +124,12 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
 	});
 });
 
+app.use('/api/admin', adminRouter(checker));
+
 // Handles any requests that don't match the ones above
 app.get(/.*/, (req, res) => {
 	res.sendFile(join(__dirname + '/client/build/index.html'));
 });
-
-//init trail checker
-const checker = new Checker();
-checker.fetchStatus();
-
-//init db client
-const dbUtil = new DbUtil();
 
 //start server
 const port = process.env.PORT || 5000;
