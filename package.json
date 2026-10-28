@@ -9,7 +9,8 @@
 		"clean": "rm -rf dist",
 		"build": "npm run clean && tsc && rsync -a client dist --exclude node_modules",
 		"check": "node dist/checker.js",
-		"check-types": "tsc --noEmit"
+		"check-types": "tsc --noEmit",
+		"test": "tsc && node --test dist/*.test.js"
 	},
 	"keywords": [],
 	"author": "Gary Bettencourt",

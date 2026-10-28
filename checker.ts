@@ -1,4 +1,3 @@
-import { parse } from 'node-html-parser';
 import nodemailer from 'nodemailer';
 import schedule from 'node-schedule';
 import DbUtil, { User } from './db.js';
@@ -6,6 +5,7 @@ import dotenv from 'dotenv';
 import twilio from 'twilio';
 import { readOverride } from './override-util.js';
 import { recordStatus, TrailStatus } from './history.js';
+import { parseTrailStatus } from './status-parser.js';
 
 dotenv.config();
 
@@ -13,6 +13,7 @@ type Config = {
 	lastCheck: Date;
 	lastStatus: string;
 	checking: boolean;
+	checkFailing: boolean;
 };
 
 export default class Checker {
@@ -21,7 +22,8 @@ export default class Checker {
 		this.config = {
 			lastCheck: new Date(),
 			lastStatus: 'NULL',
-			checking: false
+			checking: false,
+			checkFailing: false
 		};
 		if (runScheduler) {
 			//check every 15 minutes
@@ -42,32 +44,63 @@ export default class Checker {
 		this.config.checking = true;
 		try {
 			const response = await fetch(process.env.TRAIL_STATUS_URL);
+			if (!response.ok) {
+				this.reportCheckFailure(`status page returned HTTP ${response.status}`);
+				return;
+			}
 			const body = await response.text();
 
 			console.log('fetch complete, parsing...');
 
-			const root = parse(body);
-			const tableElem = root.querySelector('table').parentNode;
-
-			let trailStatus = tableElem.rawText.toLowerCase().indexOf('open') === -1 ? 'Closed' : 'Open';
-
-			console.log(`processing complete, trail status: ${trailStatus}`);
-
-			if (trailStatus != '') {
-				await recordStatus(trailStatus as TrailStatus, 'auto').catch((e) => console.log('error recording status history', e));
-
-				if (trailStatus != this.config.lastStatus && this.config.lastStatus != 'NULL') {
-					await this.sendNotifications(trailStatus);
-				}
-
-				this.config.lastStatus = trailStatus;
-				this.config.lastCheck = new Date();
+			const result = parseTrailStatus(body);
+			if ('error' in result) {
+				// keep the last known status rather than guessing
+				this.reportCheckFailure(result.error);
+				return;
 			}
+
+			const trailStatus = result.status;
+			console.log(`processing complete, trail status: ${trailStatus}`);
+			this.checkRecovered();
+
+			await recordStatus(trailStatus, 'auto').catch((e) => console.log('error recording status history', e));
+
+			if (trailStatus != this.config.lastStatus && this.config.lastStatus != 'NULL') {
+				await this.sendNotifications(trailStatus);
+			}
+
+			this.config.lastStatus = trailStatus;
+			this.config.lastCheck = new Date();
 		} catch (e) {
-			console.log(e);
+			this.reportCheckFailure(`error checking status: ${e}`);
 		} finally {
 			this.config.checking = false;
 		}
+	}
+
+	// email the admin once when checks start failing, not on every 15 minute retry
+	reportCheckFailure(reason: string) {
+		console.log(`status check failed: ${reason}`);
+		if (this.config.checkFailing) return;
+
+		this.config.checkFailing = true;
+		this.sendMail({
+			to: process.env.SMTP_ADMIN_EMAIL,
+			subject: 'Trail Checker: status check failing',
+			text: `The trail status check failed and the last known status (${this.config.lastStatus}) is being kept.\n\nReason: ${reason}\n\nStatus page: ${process.env.TRAIL_STATUS_URL}\n\nYou'll get one more email when checks recover.`
+		});
+	}
+
+	checkRecovered() {
+		if (!this.config.checkFailing) return;
+
+		this.config.checkFailing = false;
+		console.log('status check recovered');
+		this.sendMail({
+			to: process.env.SMTP_ADMIN_EMAIL,
+			subject: 'Trail Checker: status check recovered',
+			text: 'The trail status check is working again.'
+		});
 	}
 
 	public manualOverride(value: 'open' | 'closed') {
