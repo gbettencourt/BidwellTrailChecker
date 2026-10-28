@@ -1,14 +1,18 @@
-import React, { ReactNode } from 'react';
+import React, { lazy, ReactNode, Suspense } from 'react';
 import { GitHub } from '@mui/icons-material';
 import BikeIcon from '@mui/icons-material/DirectionsBike';
-import { AppBar, Toolbar, IconButton, Typography, Box, Container, CssBaseline, Link, Stack } from '@mui/material';
+import MapOutlined from '@mui/icons-material/MapOutlined';
+import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Stack, Skeleton } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import { Route, Routes, BrowserRouter, Link as RouterLink } from 'react-router-dom';
+import { Route, Routes, BrowserRouter, Link as RouterLink, useLocation } from 'react-router-dom';
 import { SignUp } from './pages/SignUp';
 import { Unsubscribe } from './pages/Unsubscribe';
 import { AdminPage } from './pages/Admin';
 import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
+
+// Leaflet is large, so only load it when someone opens the map
+const TrailMap = lazy(() => import('./pages/TrailMap'));
 
 export const App: React.FC = () => {
 	return (
@@ -20,6 +24,14 @@ export const App: React.FC = () => {
 						<Route path="/" element={<SignUp />} />
 						<Route path="/unsubscribe" element={<Unsubscribe />} />
 						<Route path="/admin" element={<AdminPage />} />
+						<Route
+							path="/map"
+							element={
+								<Suspense fallback={<Skeleton variant="rounded" height="70vh" />}>
+									<TrailMap />
+								</Suspense>
+							}
+						/>
 					</Routes>
 				</Layout>
 			</BrowserRouter>
@@ -32,6 +44,8 @@ type LayoutProps = {
 };
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+	const isMap = useLocation().pathname.toLowerCase() === '/map';
+
 	return (
 		<Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 			<AppBar
@@ -61,10 +75,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 								}}>
 								<BikeIcon fontSize="small" />
 							</Box>
-							<Typography variant="h6" component="span">
+							<Typography variant="h6" component="span" sx={{ fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
 								Bidwell Trail Checker
 							</Typography>
 						</Box>
+						<Button component={RouterLink} to="/map" color="inherit" startIcon={<MapOutlined />} sx={{ minWidth: 0 }}>
+							Map
+						</Button>
 						<IconButton aria-label="GitHub repository" color="inherit" href="https://github.com/gbettencourt/BidwellTrailChecker">
 							<GitHub />
 						</IconButton>
@@ -72,7 +89,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 				</Container>
 			</AppBar>
 
-			<Container component="main" maxWidth="sm" sx={{ flexGrow: 1, py: { xs: 4, sm: 6 } }}>
+			<Container component="main" maxWidth={isMap ? 'lg' : 'sm'} sx={{ flexGrow: 1, py: { xs: 4, sm: 6 } }}>
 				{children}
 			</Container>
 
