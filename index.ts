@@ -20,6 +20,8 @@ checker.fetchStatus();
 const dbUtil = new DbUtil();
 
 const app = express();
+
+app.set('trust proxy', 'loopback');
 app.use(express.json());
 
 app.use(
@@ -39,14 +41,6 @@ app.use(
 
 // Serve the static files from the React app
 app.use(express.static(join(__dirname, '/client/build')));
-
-app.get('/api/users', async (req, res) => {
-	let list = [];
-	if (req.connection.localAddress === req.connection.remoteAddress) {
-		list = await dbUtil.fetchEmails();
-	}
-	res.json(list);
-});
 
 app.get('/api/trailstatus', (req, res) => {
 	res.json(checker.currentStatus());

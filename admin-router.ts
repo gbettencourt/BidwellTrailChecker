@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { OverrideValue, readOverride, writeOverride } from './override-util.js';
 import Checker from 'checker.js';
+import DbUtil from './db.js';
 import { check } from 'express-validator';
 
 const router = express.Router();
@@ -71,6 +72,10 @@ router.get('/status', async (_req, res) => {
 	res.json({
 		override
 	});
+});
+
+router.get('/users', async (_req, res) => {
+	res.json(await new DbUtil().fetchEmails());
 });
 
 /**
