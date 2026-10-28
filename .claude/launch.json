@@ -1,0 +1,18 @@
+{
+	"version": "0.0.1",
+	"configurations": [
+		{
+			"name": "api",
+			"runtimeExecutable": "sh",
+			"runtimeArgs": ["-c", "npx tsc && PORT=5050 node dist/index.js"],
+			"port": 5050,
+			"autoPort": false
+		},
+		{
+			"name": "web",
+			"runtimeExecutable": "sh",
+			"runtimeArgs": ["-c", "API_URL=http://localhost:5050 npm --prefix client start -- --port 5173 --strictPort"],
+			"port": 5173
+		}
+	]
+}

@@ -15,6 +15,6 @@
 		"outDir": "dist",
 		"baseUrl": "."
 	},
-	"include": ["*.ts"],
+	"include": ["*.ts", "private/*.ts"],
 	"exclude": ["client"]
 }

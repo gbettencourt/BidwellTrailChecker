@@ -147,8 +147,7 @@ export default class Checker {
 	}
 
 	sendNewUserNotification(email: string, phone: string, existingUser: User) {
-		this.getTransporter().sendMail({
-			from: process.env.SMTP_FROM_EMAIL,
+		return this.sendMail({
 			to: process.env.SMTP_ADMIN_EMAIL,
 			subject: existingUser ? 'User updated' : 'New user registered',
 			text: `user details: email=${email}, phone=${phone}`
@@ -156,8 +155,7 @@ export default class Checker {
 	}
 
 	sendUserUnsubNotification(email: string) {
-		this.getTransporter().sendMail({
-			from: process.env.SMTP_FROM_EMAIL,
+		return this.sendMail({
 			to: process.env.SMTP_ADMIN_EMAIL,
 			subject: 'User unsubscribed',
 			text: `user: ${email}`
@@ -165,12 +163,20 @@ export default class Checker {
 	}
 
 	sendRegEmail(email: string) {
-		this.getTransporter().sendMail({
-			from: process.env.SMTP_FROM_EMAIL,
+		return this.sendMail({
 			to: email,
 			subject: 'Trail Checker Registration',
 			text: `Thank you for registering!  The current trail status is ${this.config.lastStatus}. We'll send you an update when that changes!`
 		});
+	}
+
+	// never rejects, so callers can fire and forget without an unhandled rejection crashing the process
+	async sendMail(mail: { to: string; subject: string; text: string }) {
+		try {
+			await this.getTransporter().sendMail({ from: process.env.SMTP_FROM_EMAIL, ...mail });
+		} catch (e) {
+			console.log(`error sending email "${mail.subject}" to ${mail.to}`, e);
+		}
 	}
 
 	async pause() {

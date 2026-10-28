@@ -85,13 +85,9 @@ app.post(
 			await dbUtil.addUser(email, phone);
 		}
 
-		//send confirmation emails
-		try {
-			checker.sendNewUserNotification(email, phone, existingUser);
-			checker.sendRegEmail(email);
-		} catch (e) {
-			console.log('error sending new user email', e);
-		}
+		//send confirmation emails (errors are logged inside the checker)
+		checker.sendNewUserNotification(email, phone, existingUser);
+		checker.sendRegEmail(email);
 
 		res.send({
 			success: true
@@ -112,11 +108,7 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
 	}
 	const email = req.body.email;
 	console.log('removing email=' + email);
-	try {
-		checker.sendUserUnsubNotification(email);
-	} catch (e) {
-		console.log('error sending email', e);
-	}
+	checker.sendUserUnsubNotification(email);
 
 	await dbUtil.removeUser(email);
 	res.send({

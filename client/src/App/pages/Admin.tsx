@@ -1,26 +1,35 @@
-import { Box, Typography, Button, Stack, Chip, Paper, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Alert, Box, Button, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography, Skeleton } from '@mui/material';
+import AutoModeRounded from '@mui/icons-material/AutoModeRounded';
+import LockOpenRounded from '@mui/icons-material/LockOpenRounded';
+import LockRounded from '@mui/icons-material/LockRounded';
+import React, { useEffect, useState } from 'react';
 
 type OverrideValue = 'open' | 'closed' | 'auto';
 
-interface TrailStatus {
-	override: OverrideValue;
-	autoStatus: 'open' | 'closed';
-	effectiveStatus: 'open' | 'closed';
-}
+const MODE_LABELS: Record<OverrideValue, string> = {
+	auto: 'Following the city trail page',
+	open: 'Forced open',
+	closed: 'Forced closed'
+};
 
 export function AdminPage() {
 	const [password, setPassword] = useState('');
+	const [loginError, setLoginError] = useState('');
 	const [token, setToken] = useState(localStorage.getItem('admin_token'));
 
-	const login = async () => {
+	const login = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setLoginError('');
 		const res = await fetch('/api/admin/login', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ password })
 		});
 
-		if (!res.ok) return;
+		if (!res.ok) {
+			setLoginError(res.status === 401 ? 'Incorrect password' : 'Login failed, please try again');
+			return;
+		}
 
 		const data = await res.json();
 		localStorage.setItem('admin_token', data.token);
@@ -29,25 +38,31 @@ export function AdminPage() {
 
 	if (!token) {
 		return (
-			<Box p={4}>
-				<Paper sx={{ p: 3 }}>
-					<Stack spacing={2}>
-						<Typography variant="h5">Admin Login</Typography>
-
+			<Paper sx={{ p: { xs: 3, sm: 4 } }}>
+				<Box component="form" onSubmit={login}>
+					<Stack spacing={2.5}>
+						<Box>
+							<Typography variant="h5" component="h1">
+								Admin sign in
+							</Typography>
+							<Typography color="text.secondary" sx={{ mt: 0.5 }}>
+								Manage the trail status override.
+							</Typography>
+						</Box>
+						{loginError && <Alert severity="error">{loginError}</Alert>}
 						<TextField
 							type="password"
 							label="Password"
+							autoComplete="current-password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
-							fullWidth
 						/>
-
-						<Button variant="contained" onClick={login} fullWidth>
-							Login
+						<Button variant="contained" size="large" type="submit">
+							Sign in
 						</Button>
 					</Stack>
-				</Paper>
-			</Box>
+				</Box>
+			</Paper>
 		);
 	}
 
@@ -55,8 +70,11 @@ export function AdminPage() {
 }
 
 function AdminControls() {
+	const [savedOverride, setSavedOverride] = useState<OverrideValue>('auto');
 	const [override, setOverride] = useState<OverrideValue>('auto');
 	const [loading, setLoading] = useState(true);
+	const [saving, setSaving] = useState(false);
+	const [saved, setSaved] = useState(false);
 
 	const fetchStatus = async () => {
 		const res = await fetch('/api/admin/status', {
@@ -73,6 +91,7 @@ function AdminControls() {
 
 		const data = await res.json();
 		setOverride(data.override);
+		setSavedOverride(data.override);
 		setLoading(false);
 	};
 
@@ -80,12 +99,9 @@ function AdminControls() {
 		fetchStatus();
 	}, []);
 
-	const updateOverride = async (value: OverrideValue) => {
-		setOverride(value);
-	};
-
 	const saveOverride = async () => {
-		setLoading(true);
+		setSaving(true);
+		setSaved(false);
 
 		await fetch('/api/admin/override', {
 			method: 'POST',
@@ -97,43 +113,58 @@ function AdminControls() {
 		});
 
 		await fetchStatus();
-		setLoading(false);
+		setSaving(false);
+		setSaved(true);
 	};
 
-	if (loading) return <Box p={4}>Loading...</Box>;
-
 	return (
-		<Box p={4}>
+		<Paper sx={{ p: { xs: 3, sm: 4 } }}>
 			<Stack spacing={3}>
-				<Typography variant="h5">Trail Control</Typography>
+				<Box>
+					<Typography variant="h5" component="h1">
+						Trail control
+					</Typography>
+					<Typography color="text.secondary" sx={{ mt: 0.5 }}>
+						Current mode: {loading ? <Skeleton sx={{ display: 'inline-block' }} width={160} /> : <strong>{MODE_LABELS[savedOverride]}</strong>}
+					</Typography>
+				</Box>
 
-				{/* Status Display */}
-				<Paper sx={{ p: 3 }}>
-					<Stack spacing={1}>
-						<Typography variant="body2">Mode: {override}</Typography>
-					</Stack>
-				</Paper>
+				<ToggleButtonGroup
+					exclusive
+					fullWidth
+					color="primary"
+					value={override}
+					disabled={loading || saving}
+					onChange={(_e, value: OverrideValue | null) => {
+						if (value) {
+							setOverride(value);
+							setSaved(false);
+						}
+					}}
+					sx={{ '& .MuiToggleButton-root': { flexDirection: 'column', gap: 0.5, py: 1.5, textTransform: 'none', fontWeight: 600 } }}>
+					<ToggleButton value="auto">
+						<AutoModeRounded />
+						Auto
+					</ToggleButton>
+					<ToggleButton value="open">
+						<LockOpenRounded />
+						Force open
+					</ToggleButton>
+					<ToggleButton value="closed">
+						<LockRounded />
+						Force closed
+					</ToggleButton>
+				</ToggleButtonGroup>
 
-				{/* Control */}
-				<Paper sx={{ p: 3 }}>
-					<Stack spacing={2}>
-						<FormControl fullWidth>
-							<InputLabel>Trail Mode</InputLabel>
-							<Select
-								value={override}
-								label="Trail Mode"
-								onChange={(e) => updateOverride(e.target.value as OverrideValue)}
-								disabled={loading}>
-								<MenuItem value="auto">Auto (follow scraper)</MenuItem>
-								<MenuItem value="open">Force Open</MenuItem>
-								<MenuItem value="closed">Force Closed</MenuItem>
-							</Select>
-						</FormControl>
+				{override !== 'auto' && override !== savedOverride && (
+					<Alert severity="warning">Saving will immediately notify every subscriber that the trail is {override}.</Alert>
+				)}
+				{saved && <Alert severity="success">Override saved.</Alert>}
 
-						<Button onClick={saveOverride}>Save Override</Button>
-					</Stack>
-				</Paper>
+				<Button variant="contained" size="large" onClick={saveOverride} disabled={loading || saving || override === savedOverride}>
+					{saving ? 'Saving…' : 'Save override'}
+				</Button>
 			</Stack>
-		</Box>
+		</Paper>
 	);
 }

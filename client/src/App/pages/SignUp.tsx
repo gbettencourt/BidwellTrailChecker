@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import BikeIcon from '@mui/icons-material/DirectionsBike';
-import { Avatar, Box, Button, Container, CssBaseline, FormControlLabel, Grid, Link, Switch, TextField, Typography } from '@mui/material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import MarkEmailReadRounded from '@mui/icons-material/MarkEmailReadRounded';
+import { Alert, Box, Button, Collapse, FormControlLabel, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { Captcha } from '../components/Captcha';
+import { StatusCard } from '../components/StatusCard';
 import { cleanPhoneNumber, formatPhoneNumber, getRandomInt } from '../util/Util';
 
 interface FormValues {
@@ -13,13 +13,12 @@ interface FormValues {
 	sendSms: boolean;
 }
 
-const theme = createTheme();
-
 export const SignUp: React.FC = () => {
 	const [isRegistered, setIsRegistered] = useState(false);
 	const [regError, setRegError] = useState('');
 	const [trailStatus, setTrailStatus] = useState('');
 	const [lastCheckTime, setLastCheckTime] = useState('');
+	const [statusLoading, setStatusLoading] = useState(true);
 	const captchaCode = useRef(getRandomInt(1000, 9999));
 
 	const {
@@ -29,7 +28,7 @@ export const SignUp: React.FC = () => {
 		setError,
 		clearErrors,
 		setValue,
-		formState: { errors }
+		formState: { errors, isSubmitting }
 	} = useForm<FormValues>({
 		defaultValues: {
 			email: '',
@@ -50,6 +49,8 @@ export const SignUp: React.FC = () => {
 				setLastCheckTime(status.lastCheck);
 			} catch (error) {
 				console.error('Failed to fetch trail status:', error);
+			} finally {
+				setStatusLoading(false);
 			}
 		};
 
@@ -59,8 +60,10 @@ export const SignUp: React.FC = () => {
 	const verifyCaptcha = (value: string) => parseInt(value) === captchaCode.current;
 
 	const onSubmit = async (data: FormValues) => {
+		setRegError('');
+
 		if (!verifyCaptcha(data.captcha)) {
-			setError('captcha', { type: 'manual', message: 'Please enter the number below' });
+			setError('captcha', { type: 'manual', message: 'Please enter the number shown' });
 			return;
 		} else {
 			clearErrors('captcha');
@@ -102,126 +105,112 @@ export const SignUp: React.FC = () => {
 	};
 
 	return (
-		<ThemeProvider theme={theme}>
-			<Container component="main" maxWidth="xs">
-				<CssBaseline />
-				<Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-					<Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-						<BikeIcon />
-					</Avatar>
+		<Stack spacing={3}>
+			<StatusCard status={trailStatus} lastCheck={lastCheckTime} loading={statusLoading} />
 
-					{regError && (
-						<Typography component="h1" variant="h5">
-							Unable to register {regError}
+			<Paper sx={{ p: { xs: 3, sm: 4 } }}>
+				{isRegistered ? (
+					<Stack spacing={1.5} sx={{ alignItems: 'center', textAlign: 'center', py: 2 }}>
+						<MarkEmailReadRounded color="primary" sx={{ fontSize: 56 }} />
+						<Typography variant="h5">You're signed up!</Typography>
+						<Typography color="text.secondary">
+							We'll let you know as soon as the trail status changes. Check your inbox for a confirmation email.
 						</Typography>
-					)}
-
-					{isRegistered ? (
-						<Typography component="h1" variant="h5">
-							Your registration was successful!
+					</Stack>
+				) : (
+					<>
+						<Typography variant="h5" component="h1">
+							Get notified
 						</Typography>
-					) : (
-						<>
-							<Box mt={2} />
-							<Typography component="h1" variant="h5">
-								Current trail status: <span style={{ color: trailStatus === 'Open' ? 'green' : 'red' }}>{trailStatus}</span>
-							</Typography>
-							<Typography component="h6" variant="h6">
-								Last checked: <span>{new Date(lastCheckTime).toLocaleString()}</span>
-							</Typography>
-							<Box mt={5} />
-							<Typography component="h1" variant="h5">
-								Enter your email address to get notifications when the Upper Bidwell Park trail status changes:
-							</Typography>
+						<Typography color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
+							We'll email you, or text you if you like, whenever the Upper Bidwell Park trails open or close.
+						</Typography>
 
-							<Box component="form" noValidate sx={{ mt: 3 }} onSubmit={handleSubmit(onSubmit)}>
-								<Grid container spacing={2}>
-									<Grid item xs={12}>
+						<Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
+							<Stack spacing={2.5}>
+								{regError && <Alert severity="error">Unable to register: {regError}</Alert>}
+
+								<TextField
+									{...register('email', {
+										required: 'Please enter a valid email',
+										pattern: {
+											value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+											message: 'Please enter a valid email'
+										}
+									})}
+									required
+									id="email"
+									type="email"
+									label="Email address"
+									autoComplete="email"
+									error={!!errors.email}
+									helperText={errors.email?.message}
+								/>
+
+								<Box>
+									<FormControlLabel
+										control={<Switch {...register('sendSms')} checked={sendSms} />}
+										label="Also send me text messages"
+									/>
+									<Collapse in={sendSms} unmountOnExit>
 										<TextField
-											{...register('email', {
-												required: 'Please enter a valid email',
-												pattern: {
-													value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-													message: 'Please enter a valid email'
-												}
-											})}
-											variant="outlined"
+											{...register('phone')}
 											required
-											fullWidth
-											id="email"
-											type="email"
-											label="Email Address"
-											autoComplete="email"
-											error={!!errors.email}
-											helperText={errors.email?.message}
+											id="phone"
+											type="tel"
+											label="Mobile number"
+											autoComplete="tel"
+											sx={{ mt: 1.5 }}
+											onChange={(e) => {
+												const formatted = formatPhoneNumber(e.target.value);
+												setValue('phone', formatted, { shouldValidate: true });
+											}}
+											error={!!errors.phone}
+											helperText={errors.phone?.message}
 										/>
-									</Grid>
+									</Collapse>
+								</Box>
 
-									<Grid item xs={12}>
-										<FormControlLabel
-											control={<Switch {...register('sendSms')} checked={sendSms} />}
-											label="Receive Text Messages"
-										/>
-									</Grid>
-
-									{sendSms && (
-										<Grid item xs={12}>
-											<TextField
-												{...register('phone')}
-												variant="outlined"
-												required
-												fullWidth
-												id="phone"
-												type="text"
-												label="Phone Number"
-												autoComplete="phone"
-												onChange={(e) => {
-													const formatted = formatPhoneNumber(e.target.value);
-													setValue('phone', formatted, { shouldValidate: true });
-												}}
-												error={!!errors.phone}
-												helperText={errors.phone?.message}
-											/>
-										</Grid>
-									)}
-								</Grid>
-
-								<Grid container sx={{ mt: 2 }}>
-									<Grid item xs={12}>
+								<Box>
+									<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+										Enter the number below to show you're human
+									</Typography>
+									<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-start' } }}>
+										<Box
+											sx={{
+												border: 1,
+												borderColor: 'divider',
+												borderRadius: '10px',
+												bgcolor: 'action.hover',
+												color: 'primary.main',
+												px: 1,
+												display: 'flex',
+												justifyContent: 'center',
+												flexShrink: 0
+											}}>
+											<Captcha chars={captchaCode.current.toString()} />
+										</Box>
 										<TextField
-											{...register('captcha', { required: 'Please enter the number below' })}
-											variant="outlined"
+											{...register('captcha', { required: 'Please enter the number shown' })}
 											required
-											fullWidth
 											id="captcha"
 											type="number"
-											label="Enter Code Below"
+											label="Code"
+											inputMode="numeric"
 											error={!!errors.captcha}
 											helperText={errors.captcha?.message}
 										/>
-									</Grid>
-									<Grid item xs={12} sx={{ mt: 2 }}>
-										<Captcha chars={captchaCode.current.toString()} />
-									</Grid>
-								</Grid>
+									</Stack>
+								</Box>
 
-								<Button fullWidth variant="contained" color="primary" sx={{ mt: 1, mb: 2 }} type="submit">
-									Sign Up
+								<Button variant="contained" size="large" type="submit" disabled={isSubmitting}>
+									{isSubmitting ? 'Signing up…' : 'Sign up for alerts'}
 								</Button>
-							</Box>
-						</>
-					)}
-				</Box>
-
-				<Box mt={2}>
-					<Link href="Unsubscribe">Unsubscribe</Link>
-				</Box>
-				<Box>
-					<Link href="https://chico.ca.us/Our-Community/Parks-Recreation-and-Experience-the-Outdoors/Park-Trails/Trail-Gate--Facility-Status-and-Hours/index.html">
-						Park Trail Page
-					</Link>
-				</Box>
-			</Container>
-		</ThemeProvider>
+							</Stack>
+						</Box>
+					</>
+				)}
+			</Paper>
+		</Stack>
 	);
 };

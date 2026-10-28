@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import BikeIcon from '@mui/icons-material/DirectionsBike';
-import { Avatar, Box, Button, Container, CssBaseline, Grid, TextField, Typography } from '@mui/material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { Link as RouterLink } from 'react-router-dom';
+import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
+import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
 
 type FormValues = {
 	email: string;
 };
 
 export const Unsubscribe: React.FC = () => {
-	const theme = createTheme();
 	const [unsubscribed, setUnsubscribed] = useState(false);
 	const [regError, setRegError] = useState('');
 
 	const {
 		register,
 		handleSubmit,
-		formState: { errors }
+		formState: { errors, isSubmitting }
 	} = useForm<FormValues>({
 		defaultValues: { email: '' }
 	});
 
 	const onSubmit = async (data: FormValues) => {
+		setRegError('');
 		try {
 			const res = await fetch('/api/rmemail', {
 				method: 'POST',
@@ -42,63 +42,53 @@ export const Unsubscribe: React.FC = () => {
 		}
 	};
 
-	const handleCancelClick = () => {
-		window.history.back();
-	};
-
 	return (
-		<ThemeProvider theme={theme}>
-			<Container component="main" maxWidth="xs">
-				<CssBaseline />
-				<Box
-					sx={{
-						marginTop: 8,
-						display: 'flex',
-						flexDirection: 'column',
-						alignItems: 'center'
-					}}>
-					<Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-						<BikeIcon />
-					</Avatar>
-
-					{unsubscribed ? (
-						<Typography component="h1" variant="h5">
-							You have been unsubscribed
-						</Typography>
-					) : (
-						<Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 3 }}>
-							<Grid container spacing={2}>
-								<Grid item xs={12}>
-									<TextField
-										variant="outlined"
-										required
-										fullWidth
-										id="email"
-										label="Email Address"
-										type="email"
-										autoComplete="email"
-										error={!!errors.email}
-										helperText={errors.email ? 'Please enter a valid email address' : regError}
-										{...register('email', {
-											required: true,
-											pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-										})}
-									/>
-								</Grid>
-							</Grid>
-
-							<Button type="submit" fullWidth variant="contained" color="primary" sx={{ mt: 3, mb: 2 }}>
-								Unsubscribe
-							</Button>
-
-							<Button fullWidth variant="contained" color="primary" sx={{ mt: 1, mb: 2 }} onClick={handleCancelClick}>
-								Cancel
-							</Button>
-						</Box>
-					)}
-				</Box>
-				<Box mt={5}></Box>
-			</Container>
-		</ThemeProvider>
+		<Paper sx={{ p: { xs: 3, sm: 4 } }}>
+			{unsubscribed ? (
+				<Stack spacing={1.5} sx={{ alignItems: 'center', textAlign: 'center', py: 2 }}>
+					<CheckCircleRounded color="primary" sx={{ fontSize: 56 }} />
+					<Typography variant="h5">You've been unsubscribed</Typography>
+					<Typography color="text.secondary">You won't get any more trail status updates.</Typography>
+					<Button component={RouterLink} to="/" sx={{ mt: 1 }}>
+						Back to trail status
+					</Button>
+				</Stack>
+			) : (
+				<>
+					<Typography variant="h5" component="h1">
+						Unsubscribe
+					</Typography>
+					<Typography color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
+						Enter the email you signed up with to stop receiving trail status emails and texts.
+					</Typography>
+					<Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+						<Stack spacing={2.5}>
+							{regError && <Alert severity="error">{regError}</Alert>}
+							<TextField
+								required
+								id="email"
+								label="Email address"
+								type="email"
+								autoComplete="email"
+								error={!!errors.email}
+								helperText={errors.email ? 'Please enter a valid email address' : ''}
+								{...register('email', {
+									required: true,
+									pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+								})}
+							/>
+							<Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
+								<Button variant="outlined" component={RouterLink} to="/">
+									Cancel
+								</Button>
+								<Button type="submit" variant="contained" color="error" disabled={isSubmitting}>
+									Unsubscribe
+								</Button>
+							</Stack>
+						</Stack>
+					</Box>
+				</>
+			)}
+		</Paper>
 	);
 };
