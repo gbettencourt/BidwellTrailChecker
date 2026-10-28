@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import MarkEmailReadRounded from '@mui/icons-material/MarkEmailReadRounded';
-import { Alert, Box, Button, Collapse, FormControlLabel, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import { Alert, Box, Button, Collapse, FormControlLabel, Link, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { Captcha } from '../components/Captcha';
 import { StatusCard } from '../components/StatusCard';
-import { cleanPhoneNumber, formatPhoneNumber, getRandomInt } from '../util/Util';
+import { cleanPhoneNumber, formatPhoneNumber, getRandomInt, TRAIL_PAGE_URL } from '../util/Util';
 
 interface FormValues {
 	email: string;
@@ -211,6 +212,17 @@ export const SignUp: React.FC = () => {
 					</>
 				)}
 			</Paper>
+
+			<Stack direction="row" spacing={1.25} sx={{ px: { xs: 0.5, sm: 1 }, color: 'text.secondary' }}>
+				<InfoOutlined fontSize="small" sx={{ mt: '2px' }} />
+				<Typography variant="body2">
+					Trail status is taken from the{' '}
+					<Link href={TRAIL_PAGE_URL} target="_blank" rel="noopener" color="inherit">
+						City of Chico's trail status page
+					</Link>{' '}
+					and may not always be up to date. Always check the signs at the trailhead for the latest status before you ride.
+				</Typography>
+			</Stack>
 		</Stack>
 	);
 };

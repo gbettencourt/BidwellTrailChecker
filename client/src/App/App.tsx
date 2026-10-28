@@ -8,9 +8,7 @@ import { SignUp } from './pages/SignUp';
 import { Unsubscribe } from './pages/Unsubscribe';
 import { AdminPage } from './pages/Admin';
 import { theme } from './theme';
-
-export const TRAIL_PAGE_URL =
-	'https://chico.ca.us/Our-Community/Parks-Recreation-and-Experience-the-Outdoors/Park-Trails/Trail-Gate--Facility-Status-and-Hours/index.html';
+import { TRAIL_PAGE_URL } from './util/Util';
 
 export const App: React.FC = () => {
 	return (

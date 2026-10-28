@@ -31,3 +31,6 @@ export const formatPhoneNumber = (input?: string): string => {
 export const cleanPhoneNumber = (input?: string): string => {
   return input ? input.replace(/\D/g, "") : "";
 };
+
+export const TRAIL_PAGE_URL =
+  "https://chico.ca.us/Our-Community/Parks-Recreation-and-Experience-the-Outdoors/Park-Trails/Trail-Gate--Facility-Status-and-Hours/index.html";
