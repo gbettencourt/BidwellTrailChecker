@@ -2,13 +2,19 @@ import React from 'react';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import DoNotDisturbOnRounded from '@mui/icons-material/DoNotDisturbOnRounded';
 import HelpRounded from '@mui/icons-material/HelpRounded';
-import { Box, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Box, Link, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { formatDuration } from '../util/Util';
 
 interface StatusCardProps {
 	status: string;
 	lastCheck: string;
 	loading: boolean;
+	// when the current status began, from the status history
+	since?: string;
 }
+
+const sinceFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
 const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
@@ -23,13 +29,18 @@ export function formatLastCheck(lastCheck: string) {
 	return date.toLocaleString();
 }
 
-export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loading }) => {
+export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loading, since }) => {
 	const isOpen = status === 'Open';
 	const isKnown = status === 'Open' || status === 'Closed';
 	const color = !isKnown ? 'text.secondary' : isOpen ? 'success.main' : 'error.main';
 	const tint = !isKnown ? 'var(--mui-palette-text-secondary)' : isOpen ? 'var(--mui-palette-success-main)' : 'var(--mui-palette-error-main)';
 	const Icon = !isKnown ? HelpRounded : isOpen ? CheckCircleRounded : DoNotDisturbOnRounded;
 	const checked = formatLastCheck(lastCheck);
+	const sinceDate = since ? new Date(since) : null;
+	const sinceText =
+		isKnown && sinceDate && !isNaN(sinceDate.getTime())
+			? `${status} since ${sinceFormat.format(sinceDate)} (${formatDuration(Date.now() - sinceDate.getTime())})`
+			: '';
 
 	return (
 		<Paper
@@ -57,9 +68,22 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 							{isKnown ? status : 'Unknown'}
 						</Typography>
 					</Stack>
-					<Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-						{isKnown ? (checked ? `Checked ${checked}` : '') : 'Status is not available right now. Check back soon.'}
-					</Typography>
+					{sinceText && (
+						<Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>
+							{sinceText}
+						</Typography>
+					)}
+					<Stack
+						direction="row"
+						spacing={2}
+						sx={{ mt: sinceText ? 0.5 : 1.5, justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+						<Typography variant="body2" color="text.secondary">
+							{isKnown ? (checked ? `Checked ${checked}` : '') : 'Status is not available right now. Check back soon.'}
+						</Typography>
+						<Link component={RouterLink} to="/history" variant="body2" underline="hover">
+							View history →
+						</Link>
+					</Stack>
 				</>
 			)}
 		</Paper>

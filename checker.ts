@@ -5,6 +5,7 @@ import DbUtil, { User } from './db.js';
 import dotenv from 'dotenv';
 import twilio from 'twilio';
 import { readOverride } from './override-util.js';
+import { recordStatus, TrailStatus } from './history.js';
 
 dotenv.config();
 
@@ -53,6 +54,8 @@ export default class Checker {
 			console.log(`processing complete, trail status: ${trailStatus}`);
 
 			if (trailStatus != '') {
+				await recordStatus(trailStatus as TrailStatus, 'auto').catch((e) => console.log('error recording status history', e));
+
 				if (trailStatus != this.config.lastStatus && this.config.lastStatus != 'NULL') {
 					await this.sendNotifications(trailStatus);
 				}
@@ -70,6 +73,7 @@ export default class Checker {
 	public manualOverride(value: 'open' | 'closed') {
 		this.config.lastStatus = value === 'open' ? 'Open' : 'Closed';
 		this.config.lastCheck = new Date();
+		recordStatus(this.config.lastStatus as TrailStatus, 'manual').catch((e) => console.log('error recording status history', e));
 		this.sendNotifications(this.config.lastStatus);
 	}
 

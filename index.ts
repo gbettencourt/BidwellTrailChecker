@@ -8,6 +8,7 @@ import DbUtil from './db.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import adminRouter from './admin-router.js';
+import { statusHistory } from './history.js';
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +45,10 @@ app.use(express.static(join(__dirname, '/client/build')));
 
 app.get('/api/trailstatus', (req, res) => {
 	res.json(checker.currentStatus());
+});
+
+app.get('/api/statushistory', async (req, res) => {
+	res.json(await statusHistory());
 });
 
 app.post(

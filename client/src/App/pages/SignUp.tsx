@@ -5,7 +5,7 @@ import { Alert, Box, Button, Collapse, FormControlLabel, Link, Paper, Stack, Swi
 import { useForm } from 'react-hook-form';
 import { Captcha } from '../components/Captcha';
 import { StatusCard } from '../components/StatusCard';
-import { cleanPhoneNumber, formatPhoneNumber, getRandomInt, TRAIL_PAGE_URL } from '../util/Util';
+import { cleanPhoneNumber, formatPhoneNumber, getRandomInt, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
 
 interface FormValues {
 	email: string;
@@ -20,6 +20,7 @@ export const SignUp: React.FC = () => {
 	const [trailStatus, setTrailStatus] = useState('');
 	const [lastCheckTime, setLastCheckTime] = useState('');
 	const [statusLoading, setStatusLoading] = useState(true);
+	const [statusSince, setStatusSince] = useState<StatusEvent | null>(null);
 	const captchaCode = useRef(getRandomInt(1000, 9999));
 
 	const {
@@ -56,6 +57,11 @@ export const SignUp: React.FC = () => {
 		};
 
 		fetchTrailStatus();
+
+		fetch('/api/statushistory')
+			.then((res) => res.json())
+			.then((history: StatusHistory) => setStatusSince(history.current))
+			.catch((error) => console.error('Failed to fetch status history:', error));
 	}, []);
 
 	const verifyCaptcha = (value: string) => parseInt(value) === captchaCode.current;
@@ -107,7 +113,12 @@ export const SignUp: React.FC = () => {
 
 	return (
 		<Stack spacing={3}>
-			<StatusCard status={trailStatus} lastCheck={lastCheckTime} loading={statusLoading} />
+			<StatusCard
+				status={trailStatus}
+				lastCheck={lastCheckTime}
+				loading={statusLoading}
+				since={statusSince?.status === trailStatus ? statusSince.at : undefined}
+			/>
 
 			<Paper sx={{ p: { xs: 3, sm: 4 } }}>
 				{isRegistered ? (

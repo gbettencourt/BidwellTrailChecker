@@ -8,6 +8,7 @@ import { Route, Routes, BrowserRouter, Link as RouterLink, useLocation } from 'r
 import { SignUp } from './pages/SignUp';
 import { Unsubscribe } from './pages/Unsubscribe';
 import { AdminPage } from './pages/Admin';
+import { StatusHistory } from './pages/StatusHistory';
 import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
 
@@ -24,6 +25,7 @@ export const App: React.FC = () => {
 						<Route path="/" element={<SignUp />} />
 						<Route path="/unsubscribe" element={<Unsubscribe />} />
 						<Route path="/admin" element={<AdminPage />} />
+						<Route path="/history" element={<StatusHistory />} />
 						<Route
 							path="/map"
 							element={
