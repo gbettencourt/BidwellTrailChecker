@@ -4,6 +4,8 @@ Email and text alerts when the Upper Bidwell Park trails in Chico, California op
 
 Live at [chicomtb.com](https://chicomtb.com).
 
+The homepage serves the latest trail status in its HTML, page metadata, and JSON-LD so search crawlers can read it without running the client app. The sitemap includes the homepage, trail map, and status history; utility pages are omitted. Google decides how and when to index or display this information; structured data does not guarantee a special search result.
+
 ## Features
 
 - Checks the [City of Chico trail status page](https://chico.ca.us/Our-Community/Parks-Recreation-and-Experience-the-Outdoors/Park-Trails/Trail-Gate--Facility-Status-and-Hours/index.html) every 15 minutes

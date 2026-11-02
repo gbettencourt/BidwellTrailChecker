@@ -3,12 +3,14 @@ import winston from 'winston';
 import expressWinston from 'express-winston';
 import { body, check, validationResult } from 'express-validator';
 import { join, dirname } from 'path';
+import { readFile } from 'node:fs/promises';
 import Checker from './checker.js';
 import DbUtil from './db.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import adminRouter from './admin-router.js';
 import { statusHistory } from './history.js';
+import { renderIndexablePage, renderTrailStatusPage } from './seo.js';
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +41,43 @@ app.use(
 		)
 	})
 );
+
+app.get('/', async (_req, res) => {
+	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+	res.type('html').send(renderTrailStatusPage(html, checker.currentStatus(), process.env.APP_URL || 'https://chicomtb.com'));
+});
+
+app.get('/map', async (_req, res) => {
+	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+	res.type('html').send(
+		renderIndexablePage(
+			html,
+			{
+				path: '/map',
+				title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
+				description: 'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.',
+				heading: 'Upper Bidwell Park trail map'
+			},
+			process.env.APP_URL || 'https://chicomtb.com'
+		)
+	);
+});
+
+app.get('/history', async (_req, res) => {
+	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+	res.type('html').send(
+		renderIndexablePage(
+			html,
+			{
+				path: '/history',
+				title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
+				description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.',
+				heading: 'Upper Bidwell Park trail status history'
+			},
+			process.env.APP_URL || 'https://chicomtb.com'
+		)
+	);
+});
 
 // Serve the static files from the React app
 app.use(express.static(join(__dirname, '/client/build')));
