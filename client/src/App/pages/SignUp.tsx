@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { Captcha } from '../components/Captcha';
 import { StatusCard } from '../components/StatusCard';
 import { cleanPhoneNumber, formatPhoneNumber, getRandomInt, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
+import type { AppInitialData } from '../app-data';
 
 interface FormValues {
 	email: string;
@@ -14,14 +15,15 @@ interface FormValues {
 	sendSms: boolean;
 }
 
-export const SignUp: React.FC = () => {
+export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData }) => {
 	const [isRegistered, setIsRegistered] = useState(false);
 	const [regError, setRegError] = useState('');
-	const [trailStatus, setTrailStatus] = useState('');
-	const [lastCheckTime, setLastCheckTime] = useState('');
-	const [statusLoading, setStatusLoading] = useState(true);
-	const [statusSince, setStatusSince] = useState<StatusEvent | null>(null);
-	const captchaCode = useRef(getRandomInt(1000, 9999));
+	const [trailStatus, setTrailStatus] = useState(initialData?.trailStatus ?? '');
+	const [lastCheckTime, setLastCheckTime] = useState(initialData?.lastCheck ?? '');
+	const [statusLoading, setStatusLoading] = useState(!initialData);
+	const [statusSince, setStatusSince] = useState<StatusEvent | null>(initialData?.statusSince ?? null);
+	const [now, setNow] = useState(initialData?.renderedAt ?? Date.now());
+	const captchaCode = useRef(initialData?.captchaCode ?? getRandomInt(1000, 9999));
 
 	const {
 		register,
@@ -43,6 +45,8 @@ export const SignUp: React.FC = () => {
 	const sendSms = watch('sendSms');
 
 	useEffect(() => {
+		setNow(Date.now());
+
 		const fetchTrailStatus = async () => {
 			try {
 				const res = await fetch('/api/trailstatus');
@@ -118,6 +122,7 @@ export const SignUp: React.FC = () => {
 				lastCheck={lastCheckTime}
 				loading={statusLoading}
 				since={statusSince?.status === trailStatus ? statusSince.at : undefined}
+				now={now}
 			/>
 
 			<Paper sx={{ p: { xs: 3, sm: 4 } }}>

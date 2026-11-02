@@ -4,13 +4,15 @@ import expressWinston from 'express-winston';
 import { body, check, validationResult } from 'express-validator';
 import { join, dirname } from 'path';
 import { readFile } from 'node:fs/promises';
+import { randomInt } from 'node:crypto';
 import Checker from './checker.js';
 import DbUtil from './db.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import adminRouter from './admin-router.js';
 import { statusHistory } from './history.js';
-import { renderIndexablePage, renderTrailStatusPage } from './seo.js';
+import { renderPage } from './seo.js';
+import { renderApp, renderPageContent, renderPageMetadata } from './ssr-renderer.js';
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,38 +46,50 @@ app.use(
 
 app.get('/', async (_req, res) => {
 	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	res.type('html').send(renderTrailStatusPage(html, checker.currentStatus(), process.env.APP_URL || 'https://chicomtb.com'));
+	const status = checker.currentStatus();
+	const history = await statusHistory();
+	const siteUrl = process.env.APP_URL || 'https://chicomtb.com';
+	const initialData = {
+		trailStatus: status.trailStatus,
+		lastCheck: status.lastCheck.toISOString(),
+		statusSince: history.current,
+		captchaCode: randomInt(1000, 9999),
+		renderedAt: Date.now(),
+		siteUrl
+	};
+	const renderedApp = await renderApp('/', initialData);
+	res.type('html').send(renderPage(html, { ...renderedApp, initialData }));
 });
 
 app.get('/map', async (_req, res) => {
 	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+	const siteUrl = process.env.APP_URL || 'https://chicomtb.com';
+	const page = {
+		title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
+		description: 'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.',
+		heading: 'Upper Bidwell Park trail map'
+	};
 	res.type('html').send(
-		renderIndexablePage(
-			html,
-			{
-				path: '/map',
-				title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
-				description: 'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.',
-				heading: 'Upper Bidwell Park trail map'
-			},
-			process.env.APP_URL || 'https://chicomtb.com'
-		)
+		renderPage(html, {
+			metadata: await renderPageMetadata('/map', 'Unknown', undefined, siteUrl),
+			markup: await renderPageContent(page.heading, page.description)
+		})
 	);
 });
 
 app.get('/history', async (_req, res) => {
 	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+	const siteUrl = process.env.APP_URL || 'https://chicomtb.com';
+	const page = {
+		title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
+		description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.',
+		heading: 'Upper Bidwell Park trail status history'
+	};
 	res.type('html').send(
-		renderIndexablePage(
-			html,
-			{
-				path: '/history',
-				title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
-				description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.',
-				heading: 'Upper Bidwell Park trail status history'
-			},
-			process.env.APP_URL || 'https://chicomtb.com'
-		)
+		renderPage(html, {
+			metadata: await renderPageMetadata('/history', 'Unknown', undefined, siteUrl),
+			markup: await renderPageContent(page.heading, page.description)
+		})
 	);
 });
 

@@ -4,39 +4,66 @@ import BikeIcon from '@mui/icons-material/DirectionsBike';
 import MapOutlined from '@mui/icons-material/MapOutlined';
 import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Stack, Skeleton } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import { Route, Routes, BrowserRouter, Link as RouterLink, useLocation } from 'react-router-dom';
+import { Route, Routes, BrowserRouter, MemoryRouter, Link as RouterLink, useLocation } from 'react-router-dom';
 import { SignUp } from './pages/SignUp';
 import { Unsubscribe } from './pages/Unsubscribe';
 import { AdminPage } from './pages/Admin';
 import { StatusHistory } from './pages/StatusHistory';
 import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
+import type { AppInitialData } from './app-data';
+import { ClientPageMetadata } from './components/PageMetadata';
 
 // Leaflet is large, so only load it when someone opens the map
 const TrailMap = lazy(() => import('./pages/TrailMap'));
 
-export const App: React.FC = () => {
+type AppProps = {
+	initialUrl?: string;
+	initialData?: AppInitialData;
+};
+
+export const App: React.FC<AppProps> = ({ initialUrl, initialData }) => {
+	const routes = (
+		<Layout>
+			<Routes>
+				<Route path="/" element={<SignUp initialData={initialData} />} />
+				<Route path="/unsubscribe" element={<Unsubscribe />} />
+				<Route path="/admin" element={<AdminPage />} />
+				<Route path="/history" element={<StatusHistory />} />
+				<Route
+					path="/map"
+					element={
+						<Suspense fallback={<Skeleton variant="rounded" height="70vh" />}>
+							<TrailMap />
+						</Suspense>
+					}
+				/>
+			</Routes>
+		</Layout>
+	);
+	const metadataSiteUrl = initialData?.siteUrl ?? (initialUrl ? 'https://chicomtb.com' : window.location.origin);
+	const metadata = (
+		<ClientPageMetadata
+			status={initialData?.trailStatus === 'Open' || initialData?.trailStatus === 'Closed' ? initialData.trailStatus : 'Unknown'}
+			lastCheck={initialData?.lastCheck}
+			siteUrl={metadataSiteUrl}
+		/>
+	);
+
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
-			<BrowserRouter>
-				<Layout>
-					<Routes>
-						<Route path="/" element={<SignUp />} />
-						<Route path="/unsubscribe" element={<Unsubscribe />} />
-						<Route path="/admin" element={<AdminPage />} />
-						<Route path="/history" element={<StatusHistory />} />
-						<Route
-							path="/map"
-							element={
-								<Suspense fallback={<Skeleton variant="rounded" height="70vh" />}>
-									<TrailMap />
-								</Suspense>
-							}
-						/>
-					</Routes>
-				</Layout>
-			</BrowserRouter>
+			{initialUrl ? (
+				<MemoryRouter initialEntries={[initialUrl]}>
+					{metadata}
+					{routes}
+				</MemoryRouter>
+			) : (
+				<BrowserRouter>
+					{metadata}
+					{routes}
+				</BrowserRouter>
+			)}
 		</ThemeProvider>
 	);
 };

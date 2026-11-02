@@ -4,7 +4,7 @@ Email and text alerts when the Upper Bidwell Park trails in Chico, California op
 
 Live at [chicomtb.com](https://chicomtb.com).
 
-The homepage serves the latest trail status in its HTML, page metadata, and JSON-LD so search crawlers can read it without running the client app. The sitemap includes the homepage, trail map, and status history; utility pages are omitted. Google decides how and when to index or display this information; structured data does not guarantee a special search result.
+The homepage server-renders and hydrates the React app, including the latest trail status, so it displays without a client-rendering flash and search crawlers can read it without running JavaScript. The sitemap includes the homepage, trail map, and status history; utility pages are omitted. Google decides how and when to index or display this information; structured data does not guarantee a special search result.
 
 ## Features
 
@@ -51,7 +51,7 @@ npm test
 
 ## Production
 
-Build the client first, since the server build copies it into `dist`:
+Build the client first, including its server-rendering bundle, since the server build copies it into `dist`:
 
 ```sh
 npm --prefix client run build

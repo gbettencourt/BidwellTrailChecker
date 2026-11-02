@@ -12,34 +12,35 @@ interface StatusCardProps {
 	loading: boolean;
 	// when the current status began, from the status history
 	since?: string;
+	now?: number;
 }
 
-const sinceFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+const sinceFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
 
 const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
-export function formatLastCheck(lastCheck: string) {
+export function formatLastCheck(lastCheck: string, now = Date.now()) {
 	const date = new Date(lastCheck);
 	if (!lastCheck || isNaN(date.getTime())) return '';
 
-	const minutes = Math.round((date.getTime() - Date.now()) / 60000);
+	const minutes = Math.round((date.getTime() - now) / 60000);
 	if (Math.abs(minutes) < 60) return relativeTime.format(minutes, 'minute');
 	const hours = Math.round(minutes / 60);
 	if (Math.abs(hours) < 24) return relativeTime.format(hours, 'hour');
-	return date.toLocaleString();
+	return date.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
 }
 
-export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loading, since }) => {
+export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loading, since, now = Date.now() }) => {
 	const isOpen = status === 'Open';
 	const isKnown = status === 'Open' || status === 'Closed';
 	const color = !isKnown ? 'text.secondary' : isOpen ? 'success.main' : 'error.main';
 	const tint = !isKnown ? 'var(--mui-palette-text-secondary)' : isOpen ? 'var(--mui-palette-success-main)' : 'var(--mui-palette-error-main)';
 	const Icon = !isKnown ? HelpRounded : isOpen ? CheckCircleRounded : DoNotDisturbOnRounded;
-	const checked = formatLastCheck(lastCheck);
+	const checked = formatLastCheck(lastCheck, now);
 	const sinceDate = since ? new Date(since) : null;
 	const sinceText =
 		isKnown && sinceDate && !isNaN(sinceDate.getTime())
-			? `${status} since ${sinceFormat.format(sinceDate)} (${formatDuration(Date.now() - sinceDate.getTime())})`
+			? `${status} since ${sinceFormat.format(sinceDate)} (${formatDuration(now - sinceDate.getTime())})`
 			: '';
 
 	return (

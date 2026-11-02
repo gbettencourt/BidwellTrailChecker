@@ -1,6 +1,7 @@
 {
 	"name": "client",
 	"version": "0.1.1",
+	"type": "module",
 	"private": true,
 	"dependencies": {
 		"@emotion/react": "^11.14.0",
@@ -26,7 +27,7 @@
 	},
 	"scripts": {
 		"start": "vite",
-		"build": "vite build",
+		"build": "vite build && vite build --ssr src/entry-server.tsx --outDir build-ssr",
 		"test": "vite test"
 	},
 	"browserslist": {
