@@ -1,14 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" href="/favicon.ico" />
+		<!-- Favicons -->
+		<link rel="icon" href="/favicon.ico" sizes="any" />
+		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+
+		<!-- Apple -->
+		<link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png" />
+
+		<!-- Android / PWA -->
+		<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+		<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
+
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#2f6b4f" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-		<link rel="apple-touch-icon" href="/logo192.png" />
 		<link rel="manifest" href="/manifest.json" />
 		<!-- PAGE_METADATA -->
 		<!-- SSR_STYLES -->
@@ -17,7 +28,9 @@
 	<body>
 		<noscript>You need to enable JavaScript to run this app.</noscript>
 		<div id="root"><!-- TRAIL_STATUS_CONTENT --></div>
-		<script type="application/json" id="app-initial-data"><!-- APP_INITIAL_DATA --></script>
+		<script type="application/json" id="app-initial-data">
+			<!-- APP_INITIAL_DATA -->
+		</script>
 		<script type="module" src="/src/index.tsx"></script>
 	</body>
 </html>
