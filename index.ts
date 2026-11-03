@@ -33,15 +33,16 @@ app.use(express.json());
 app.use(
 	expressWinston.logger({
 		transports: [new winston.transports.Console()],
-		format: winston.format.combine(
-			winston.format.colorize({ all: true }),
-			winston.format.timestamp({
-				format: 'MM-DD-YYYY HH:mm:ss'
-			}),
-			winston.format.printf((info) => {
-				return `${info.timestamp}: ${info.message}`;
-			})
-		)
+		format: winston.format.combine(winston.format.timestamp({ format: 'MM-DD-YYYY HH:mm:ss' }), winston.format.json()),
+		// Log only the fields you need, not all headers
+		requestWhitelist: ['url', 'method', 'headers.user-agent', 'headers.referer'],
+		responseWhitelist: ['statusCode'],
+		headerBlacklist: ['cookie', 'authorization'],
+		msg: 'HTTP {{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms',
+		dynamicMeta: (req) => ({
+			ip: req.headers['x-forwarded-for'] || req.ip, // behind Caddy, also set app.set('trust proxy', true)
+			userAgent: req.headers['user-agent']
+		})
 	})
 );
 
