@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
 
@@ -11,6 +11,35 @@ type FormValues = {
 export const Unsubscribe: React.FC = () => {
 	const [unsubscribed, setUnsubscribed] = useState(false);
 	const [regError, setRegError] = useState('');
+
+	// signed link from an email: /unsubscribe?u=<user id>&t=<token>
+	const [searchParams] = useSearchParams();
+	const linkUser = searchParams.get('u');
+	const linkToken = searchParams.get('t');
+	const [linkError, setLinkError] = useState('');
+	const [linkSubmitting, setLinkSubmitting] = useState(false);
+
+	const unsubscribeFromLink = async () => {
+		setLinkSubmitting(true);
+		try {
+			const res = await fetch('/api/unsubscribe', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ u: linkUser, t: linkToken })
+			});
+			const result = await res.json();
+			if (result.success) {
+				setUnsubscribed(true);
+			} else {
+				setLinkError(result.error ?? 'This unsubscribe link is invalid.');
+			}
+		} catch (err) {
+			console.error('Unsubscribe failed:', err);
+			setLinkError('An unexpected error occurred.');
+		} finally {
+			setLinkSubmitting(false);
+		}
+	};
 
 	const {
 		register,
@@ -53,11 +82,36 @@ export const Unsubscribe: React.FC = () => {
 						Back to trail status
 					</Button>
 				</Stack>
+			) : linkUser && linkToken && !linkError ? (
+				// arrived from the unsubscribe link in an email: confirm first, since mail scanners open links on their own
+				<Stack spacing={2.5}>
+					<Box>
+						<Typography variant="h5" component="h1">
+							Unsubscribe from trail alerts?
+						</Typography>
+						<Typography color="text.secondary" sx={{ mt: 0.5 }}>
+							You'll stop getting trail status emails and texts. You can sign up again any time.
+						</Typography>
+					</Box>
+					<Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
+						<Button variant="outlined" component={RouterLink} to="/">
+							Keep my alerts
+						</Button>
+						<Button variant="contained" color="error" onClick={unsubscribeFromLink} disabled={linkSubmitting}>
+							Unsubscribe
+						</Button>
+					</Stack>
+				</Stack>
 			) : (
 				<>
 					<Typography variant="h5" component="h1">
 						Unsubscribe
 					</Typography>
+					{linkError && (
+						<Alert severity="warning" sx={{ mt: 2 }}>
+							{linkError} You can still unsubscribe with your email address below.
+						</Alert>
+					)}
 					<Typography color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
 						Enter the email you signed up with to stop receiving trail status emails and texts.
 					</Typography>

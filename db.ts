@@ -28,11 +28,18 @@ export default class DbUtil {
 		return this.db.data.users;
 	}
 
-	async addUser(email: string, phone: string) {
+	async addUser(email: string, phone: string): Promise<User> {
 		await this.db.read();
 		const nextId = this.db.data.users.length > 0 ? this.db.data.users[this.db.data.users.length - 1].id + 1 : 1;
-		this.db.data.users.push({ id: nextId, email, phone });
+		const user = { id: nextId, email, phone };
+		this.db.data.users.push(user);
 		await this.db.write();
+		return user;
+	}
+
+	async fetchUser(id: number): Promise<User | undefined> {
+		await this.db.read();
+		return this.db.data.users.find((user) => user.id === id);
 	}
 
 	async removeUser(email: string) {

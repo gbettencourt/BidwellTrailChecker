@@ -13,6 +13,7 @@ import adminRouter from './admin-router.js';
 import { statusHistory } from './history.js';
 import { renderPage } from './seo.js';
 import { renderApp, renderPageContent, renderPageMetadata } from './ssr-renderer.js';
+import { verifyUnsubscribeToken } from './unsubscribe.js';
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -66,7 +67,8 @@ app.get('/map', async (_req, res) => {
 	const siteUrl = process.env.APP_URL || 'https://chicomtb.com';
 	const page = {
 		title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
-		description: 'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.',
+		description:
+			'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.',
 		heading: 'Upper Bidwell Park trail map'
 	};
 	res.type('html').send(
@@ -129,17 +131,18 @@ app.post(
 		const users = await dbUtil.fetchUsers();
 		const existingUser = users.find((user) => user.email === email);
 
+		let user = existingUser;
 		if (existingUser) {
 			console.log(`updating existing user, email=${email}, phone=${phone}`);
 			existingUser.phone = phone;
 			await dbUtil.save();
 		} else {
-			await dbUtil.addUser(email, phone);
+			user = await dbUtil.addUser(email, phone);
 		}
 
 		//send confirmation emails (errors are logged inside the checker)
 		checker.sendNewUserNotification(email, phone, existingUser);
-		checker.sendRegEmail(email);
+		checker.sendRegEmail(user);
 
 		res.send({
 			success: true
@@ -168,12 +171,39 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
 	});
 });
 
+// unsubscribe from a signed link in an email (u = user id, t = token); unknown or already-removed users succeed quietly
+async function unsubscribeFromLink(id: unknown, token: unknown) {
+	const user = await dbUtil.fetchUser(Number(id));
+	if (!user) return true;
+	if (!verifyUnsubscribeToken(user, String(token))) return false;
+
+	console.log(`unsubscribing via email link, email=${user.email}`);
+	checker.sendUserUnsubNotification(user.email);
+	await dbUtil.removeUser(user.email);
+	return true;
+}
+
+app.post('/api/unsubscribe', async (req, res) => {
+	const ok = await unsubscribeFromLink(req.body.u, req.body.t);
+	res.status(ok ? 200 : 400).send({ success: ok, error: ok ? undefined : 'This unsubscribe link is invalid or has expired' });
+});
+
+// one-click unsubscribe from the mail client's own button (List-Unsubscribe-Post, RFC 8058)
+app.post('/api/unsubscribe/oneclick', express.urlencoded({ extended: false }), async (req, res) => {
+	const ok = await unsubscribeFromLink(req.query.u, req.query.t);
+	res.sendStatus(ok ? 200 : 400);
+});
+
 app.use('/api/admin', adminRouter(checker));
 
 // Handles any requests that don't match the ones above
 app.get(/.*/, (req, res) => {
 	res.sendFile(join(__dirname + '/client/build/index.html'));
 });
+
+if (!process.env.APP_URL) {
+	console.warn('APP_URL is not set, so links in emails (including unsubscribe links) will be broken');
+}
 
 //start server
 const port = process.env.PORT || 5000;

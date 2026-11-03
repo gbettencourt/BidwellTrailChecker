@@ -15,7 +15,7 @@ The homepage server-renders and hydrates the React app, including the latest tra
 
 ## Tech
 
-- **Server:** Node 22, Express 5, TypeScript, [lowdb](https://github.com/typicode/lowdb) JSON files for storage, nodemailer (Gmail) and Twilio
+- **Server:** Node 22, Express 5, TypeScript, [lowdb](https://github.com/typicode/lowdb) JSON files for storage, nodemailer and Twilio
 - **Client:** React 19, MUI, Vite, Leaflet
 
 ## Setup
@@ -81,11 +81,10 @@ Set in `.env`:
 | `PORT` | Port the server listens on (default 5000) |
 | `APP_URL` | Public URL of the site, used for links in emails, e.g. `https://chicomtb.com` |
 | `TRAIL_STATUS_URL` | City trail status page to check |
-| `SMTP_USER`, `SMTP_PWD` | Gmail account and [app password](https://support.google.com/accounts/answer/185833) used to send email |
+| `SMTP_HOST`, `SMTP_PORT` | SMTP server for sending email, e.g. `email-smtp.us-west-2.amazonaws.com` and `587` for Amazon SES. Leave `SMTP_HOST` empty to send through Gmail. |
+| `SMTP_USER`, `SMTP_PWD` | SMTP login: SES SMTP credentials, or a Gmail account and [app password](https://support.google.com/accounts/answer/185833) |
 | `SMTP_FROM_EMAIL` | From address on alerts |
 | `SMS_SID`, `SMS_TOKEN`, `SMS_FROM` | Twilio account SID, auth token and sending number (10 digits, no +1) |
-
-`SMTP_HOST` and `SMTP_PORT` are in `.env.example` but not used yet: email currently always goes through Gmail.
 
 ## Updating the trail map
 

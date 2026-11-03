@@ -6,6 +6,14 @@ import twilio from 'twilio';
 import { readOverride } from './override-util.js';
 import { recordStatus, TrailStatus } from './history.js';
 import { parseTrailStatus } from './status-parser.js';
+import { statusChangeEmail, welcomeEmail } from './email-templates.js';
+import { oneClickUnsubscribeUrl } from './unsubscribe.js';
+
+// lets Gmail and Yahoo show their own unsubscribe button, which unsubscribes in one click (RFC 8058)
+const unsubscribeHeaders = (user: User) => ({
+	'List-Unsubscribe': `<${oneClickUnsubscribeUrl(user)}>`,
+	'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+});
 
 dotenv.config();
 
@@ -116,8 +124,7 @@ export default class Checker {
 
 		console.log('sending notifications');
 
-		const subject = 'Bidwell Trail Status Update';
-		const text = `Trail status changed to: ${trailStatus}`;
+		const smsText = `Bidwell Trail Status Update. Trail status changed to: ${trailStatus}`;
 
 		try {
 			const smsClient = twilio(process.env.SMS_SID, process.env.SMS_TOKEN);
@@ -133,8 +140,8 @@ export default class Checker {
 						const info = await transporter.sendMail({
 							from: process.env.SMTP_FROM_EMAIL,
 							to: user.email,
-							subject,
-							text
+							...statusChangeEmail(trailStatus, user),
+							headers: unsubscribeHeaders(user)
 						});
 						console.log(`Message sent: ${info.messageId}`);
 					} catch (e) {
@@ -147,7 +154,7 @@ export default class Checker {
 
 					try {
 						const message = await smsClient.messages.create({
-							body: `${subject}. ${text}`,
+							body: smsText,
 							from: `+1${process.env.SMS_FROM}`,
 							to: `+1${user.phone}`
 						});
@@ -172,14 +179,24 @@ export default class Checker {
 		};
 	}
 
+	// SMTP server from SMTP_HOST/SMTP_PORT (e.g. Amazon SES), or Gmail when SMTP_HOST isn't set
 	getTransporter(pool = false) {
+		const auth = {
+			user: process.env.SMTP_USER,
+			pass: process.env.SMTP_PWD
+		};
+		if (!process.env.SMTP_HOST) {
+			return nodemailer.createTransport({ service: 'Gmail', pool, auth });
+		}
+
+		const port = Number(process.env.SMTP_PORT) || 587;
 		return nodemailer.createTransport({
-			service: 'Gmail',
+			host: process.env.SMTP_HOST,
+			port,
+			// 465 is TLS from the start; 587 upgrades with STARTTLS
+			secure: port === 465,
 			pool,
-			auth: {
-				user: process.env.SMTP_USER,
-				pass: process.env.SMTP_PWD
-			}
+			auth
 		});
 	}
 
@@ -199,16 +216,16 @@ export default class Checker {
 		});
 	}
 
-	sendRegEmail(email: string) {
+	sendRegEmail(user: User) {
 		return this.sendMail({
-			to: email,
-			subject: 'Trail Checker Registration',
-			text: `Thank you for registering!  The current trail status is ${this.config.lastStatus}. We'll send you an update when that changes!`
+			to: user.email,
+			...welcomeEmail(this.config.lastStatus, user),
+			headers: unsubscribeHeaders(user)
 		});
 	}
 
 	// never rejects, so callers can fire and forget without an unhandled rejection crashing the process
-	async sendMail(mail: { to: string; subject: string; text: string }) {
+	async sendMail(mail: { to: string; subject: string; text: string; html?: string; headers?: Record<string, string> }) {
 		try {
 			await this.getTransporter().sendMail({ from: process.env.SMTP_FROM_EMAIL, ...mail });
 		} catch (e) {
