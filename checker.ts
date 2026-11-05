@@ -139,6 +139,7 @@ export default class Checker {
 					try {
 						const info = await transporter.sendMail({
 							from: process.env.SMTP_FROM_EMAIL,
+							replyTo: process.env.SMTP_ADMIN_EMAIL,
 							to: user.email,
 							...statusChangeEmail(trailStatus, user),
 							headers: unsubscribeHeaders(user)
@@ -165,7 +166,7 @@ export default class Checker {
 				}
 
 				// rate limit
-				await this.pause();
+				// await this.pause();
 			}
 		} catch (e) {
 			console.log('error sending emails', e);
