@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Captcha } from '../components/Captcha';
+import { getRandomInt } from '../util/Util';
 
 type FormValues = {
 	email: string;
+	captcha: string;
 };
 
 export const Unsubscribe: React.FC = () => {
@@ -18,6 +21,7 @@ export const Unsubscribe: React.FC = () => {
 	const linkToken = searchParams.get('t');
 	const [linkError, setLinkError] = useState('');
 	const [linkSubmitting, setLinkSubmitting] = useState(false);
+	const captchaCode = useRef(getRandomInt(1000, 9999));
 
 	const unsubscribeFromLink = async () => {
 		setLinkSubmitting(true);
@@ -44,13 +48,21 @@ export const Unsubscribe: React.FC = () => {
 	const {
 		register,
 		handleSubmit,
+		setError,
+		clearErrors,
 		formState: { errors, isSubmitting }
 	} = useForm<FormValues>({
-		defaultValues: { email: '' }
+		defaultValues: { email: '', captcha: '' }
 	});
 
 	const onSubmit = async (data: FormValues) => {
 		setRegError('');
+		if (parseInt(data.captcha) !== captchaCode.current) {
+			setError('captcha', { type: 'manual', message: 'Please enter the number shown' });
+			return;
+		}
+		clearErrors('captcha');
+
 		try {
 			const res = await fetch('/api/rmemail', {
 				method: 'POST',
@@ -131,6 +143,37 @@ export const Unsubscribe: React.FC = () => {
 									pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 								})}
 							/>
+							<Box>
+								<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+									Enter the number below to show you're human
+								</Typography>
+								<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-start' } }}>
+									<Box
+										sx={{
+											border: 1,
+											borderColor: 'divider',
+											borderRadius: '10px',
+											bgcolor: 'action.hover',
+											color: 'primary.main',
+											px: 1,
+											display: 'flex',
+											justifyContent: 'center',
+											flexShrink: 0
+										}}>
+										<Captcha chars={captchaCode.current.toString()} />
+									</Box>
+									<TextField
+										{...register('captcha', { required: 'Please enter the number shown' })}
+										required
+										id="captcha"
+										type="number"
+										label="Code"
+										inputMode="numeric"
+										error={!!errors.captcha}
+										helperText={errors.captcha?.message}
+									/>
+								</Stack>
+							</Box>
 							<Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
 								<Button variant="outlined" component={RouterLink} to="/">
 									Cancel
