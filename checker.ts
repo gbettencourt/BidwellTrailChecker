@@ -160,7 +160,7 @@ export default class Checker {
 				}
 
 				// rate limit
-				await this.pause();
+				// await this.pause();
 			}
 		} catch (e) {
 			console.log('error sending emails', e);
@@ -170,6 +170,7 @@ export default class Checker {
 	async sendStatusEmail(trailStatus: string, user: User, transporter = this.getTransporter(true)) {
 		return transporter.sendMail({
 			from: process.env.SMTP_FROM_EMAIL,
+			replyTo: process.env.SMTP_ADMIN_EMAIL,
 			to: user.email,
 			...statusChangeEmail(trailStatus, user),
 			headers: unsubscribeHeaders(user)
