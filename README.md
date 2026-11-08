@@ -79,7 +79,7 @@ Set in `.env`:
 | Variable | Description |
 |---|---|
 | `PORT` | Port the server listens on (default 5000) |
-| `APP_URL` | Public URL of the site, used for links in emails, e.g. `https://chicomtb.com` |
+| `APP_URL` | Public URL of the site, used for links in emails and as the default canonical site origin, e.g. `https://www.chicomtb.com` |
 | `TRAIL_STATUS_URL` | City trail status page to check |
 | `SMTP_HOST`, `SMTP_PORT` | SMTP server for sending email, e.g. `email-smtp.us-west-2.amazonaws.com` and `587` for Amazon SES. Leave `SMTP_HOST` empty to send through Gmail. |
 | `SMTP_USER`, `SMTP_PWD` | SMTP login: SES SMTP credentials, or a Gmail account and [app password](https://support.google.com/accounts/answer/185833) |

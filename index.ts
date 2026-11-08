@@ -17,6 +17,7 @@ import { verifyUnsubscribeToken } from './unsubscribe.js';
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const seoSiteUrl = process.env.APP_URL || 'https://www.chicomtb.com';
 
 //init trail checker
 const checker = new Checker();
@@ -50,14 +51,13 @@ app.get('/', async (_req, res) => {
 	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
 	const status = checker.currentStatus();
 	const history = await statusHistory();
-	const siteUrl = process.env.APP_URL || 'https://chicomtb.com';
 	const initialData = {
 		trailStatus: status.trailStatus,
 		lastCheck: status.lastCheck.toISOString(),
 		statusSince: history.current,
 		captchaCode: randomInt(1000, 9999),
 		renderedAt: Date.now(),
-		siteUrl
+		siteUrl: seoSiteUrl
 	};
 	const renderedApp = await renderApp('/', initialData);
 	res.type('html').send(renderPage(html, { ...renderedApp, initialData }));
@@ -65,7 +65,6 @@ app.get('/', async (_req, res) => {
 
 app.get('/map', async (_req, res) => {
 	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	const siteUrl = process.env.APP_URL || 'https://chicomtb.com';
 	const page = {
 		title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
 		description:
@@ -74,7 +73,7 @@ app.get('/map', async (_req, res) => {
 	};
 	res.type('html').send(
 		renderPage(html, {
-			metadata: await renderPageMetadata('/map', 'Unknown', undefined, siteUrl),
+			metadata: await renderPageMetadata('/map', 'Unknown', undefined, seoSiteUrl),
 			markup: await renderPageContent(page.heading, page.description)
 		})
 	);
@@ -82,7 +81,6 @@ app.get('/map', async (_req, res) => {
 
 app.get('/history', async (_req, res) => {
 	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	const siteUrl = process.env.APP_URL || 'https://chicomtb.com';
 	const page = {
 		title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
 		description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.',
@@ -90,7 +88,7 @@ app.get('/history', async (_req, res) => {
 	};
 	res.type('html').send(
 		renderPage(html, {
-			metadata: await renderPageMetadata('/history', 'Unknown', undefined, siteUrl),
+			metadata: await renderPageMetadata('/history', 'Unknown', undefined, seoSiteUrl),
 			markup: await renderPageContent(page.heading, page.description)
 		})
 	);
