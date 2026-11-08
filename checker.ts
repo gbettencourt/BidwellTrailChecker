@@ -137,12 +137,7 @@ export default class Checker {
 					console.log('skipMail=true');
 				} else {
 					try {
-						const info = await transporter.sendMail({
-							from: process.env.SMTP_FROM_EMAIL,
-							to: user.email,
-							...statusChangeEmail(trailStatus, user),
-							headers: unsubscribeHeaders(user)
-						});
+						const info = await this.sendStatusEmail(trailStatus, user, transporter);
 						console.log(`Message sent: ${info.messageId}`);
 					} catch (e) {
 						console.log(e);
@@ -170,6 +165,15 @@ export default class Checker {
 		} catch (e) {
 			console.log('error sending emails', e);
 		}
+	}
+
+	async sendStatusEmail(trailStatus: string, user: User, transporter = this.getTransporter(true)) {
+		return transporter.sendMail({
+			from: process.env.SMTP_FROM_EMAIL,
+			to: user.email,
+			...statusChangeEmail(trailStatus, user),
+			headers: unsubscribeHeaders(user)
+		});
 	}
 
 	currentStatus() {

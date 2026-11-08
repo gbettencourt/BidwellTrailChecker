@@ -1,10 +1,11 @@
-import { Alert, Box, Button, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography, Skeleton } from '@mui/material';
+import { Alert, Box, Button, Divider, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography, Skeleton } from '@mui/material';
 import AutoModeRounded from '@mui/icons-material/AutoModeRounded';
 import LockOpenRounded from '@mui/icons-material/LockOpenRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
 import React, { useEffect, useState } from 'react';
 
 type OverrideValue = 'open' | 'closed' | 'auto';
+type TestEmailStatus = 'open' | 'closed';
 
 const MODE_LABELS: Record<OverrideValue, string> = {
 	auto: 'Following the city trail page',
@@ -20,6 +21,7 @@ export function AdminPage() {
 	const login = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoginError('');
+
 		const res = await fetch('/api/admin/login', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -75,6 +77,10 @@ function AdminControls() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [saved, setSaved] = useState(false);
+	const [testEmailStatus, setTestEmailStatus] = useState<TestEmailStatus>('open');
+	const [sendingTestEmail, setSendingTestEmail] = useState(false);
+	const [testEmailSent, setTestEmailSent] = useState(false);
+	const [testEmailError, setTestEmailError] = useState('');
 
 	const fetchStatus = async () => {
 		const res = await fetch('/api/admin/status', {
@@ -115,6 +121,40 @@ function AdminControls() {
 		await fetchStatus();
 		setSaving(false);
 		setSaved(true);
+	};
+
+	const sendTestEmail = async () => {
+		setSendingTestEmail(true);
+		setTestEmailSent(false);
+		setTestEmailError('');
+
+		try {
+			const res = await fetch('/api/admin/test-email', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: 'Bearer ' + localStorage.getItem('admin_token')
+				},
+				body: JSON.stringify({ status: testEmailStatus })
+			});
+
+			if (res.status === 401) {
+				localStorage.removeItem('admin_token');
+				window.location.reload();
+				return;
+			}
+
+			if (!res.ok) {
+				const data = await res.json();
+				throw new Error(data.error || 'Failed to send test email');
+			}
+
+			setTestEmailSent(true);
+		} catch (error) {
+			setTestEmailError(error instanceof Error ? error.message : 'Failed to send test email');
+		} finally {
+			setSendingTestEmail(false);
+		}
 	};
 
 	return (
@@ -164,6 +204,41 @@ function AdminControls() {
 				<Button variant="contained" size="large" onClick={saveOverride} disabled={loading || saving || override === savedOverride}>
 					{saving ? 'Saving…' : 'Save override'}
 				</Button>
+
+				<Divider />
+
+				<Stack spacing={2}>
+					<Box>
+						<Typography variant="h6" component="h2">
+							Test email
+						</Typography>
+						<Typography color="text.secondary" sx={{ mt: 0.5 }}>
+							Send a sample trail status email to the configured admin email address.
+						</Typography>
+					</Box>
+					<ToggleButtonGroup
+						exclusive
+						fullWidth
+						color="primary"
+						value={testEmailStatus}
+						disabled={sendingTestEmail}
+						onChange={(_e, value: TestEmailStatus | null) => {
+							if (value) {
+								setTestEmailStatus(value);
+								setTestEmailSent(false);
+								setTestEmailError('');
+							}
+						}}
+						sx={{ '& .MuiToggleButton-root': { textTransform: 'none', fontWeight: 600 } }}>
+						<ToggleButton value="open">Open</ToggleButton>
+						<ToggleButton value="closed">Closed</ToggleButton>
+					</ToggleButtonGroup>
+					{testEmailError && <Alert severity="error">{testEmailError}</Alert>}
+					{testEmailSent && <Alert severity="success">Test email sent to the configured admin email address.</Alert>}
+					<Button variant="outlined" size="large" onClick={sendTestEmail} disabled={sendingTestEmail}>
+						{sendingTestEmail ? 'Sending…' : 'Send test email'}
+					</Button>
+				</Stack>
 			</Stack>
 		</Paper>
 	);

@@ -14,6 +14,10 @@ const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.char
 function layout({ status, heading, paragraphs, user }: { status: string; heading: string; paragraphs: string[]; user: User }) {
 	const color = COLORS[status as keyof typeof COLORS] ?? COLORS.Unknown;
 	const appUrl = process.env.APP_URL;
+	const footer = `<tr><td style="padding:16px 24px;border-top:1px solid #e1e6e0;font-size:12px;line-height:1.5;color:#7a857f;">
+			You're getting this because ${escapeHtml(user.email)} signed up for Bidwell Trail Checker alerts.
+			<a href="${unsubscribePageUrl(user)}" style="color:#7a857f;">Unsubscribe</a>
+		</td></tr>`;
 
 	return `<!doctype html>
 <html lang="en">
@@ -34,10 +38,7 @@ function layout({ status, heading, paragraphs, user }: { status: string; heading
 			</td></tr></table>
 			<p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#5f6b66;">Status comes from the City of Chico's trail page and may lag behind. Always check the signs at the trailhead before you ride.</p>
 		</td></tr>
-		<tr><td style="padding:16px 24px;border-top:1px solid #e1e6e0;font-size:12px;line-height:1.5;color:#7a857f;">
-			You're getting this because ${escapeHtml(user.email)} signed up for Bidwell Trail Checker alerts.
-			<a href="${unsubscribePageUrl(user)}" style="color:#7a857f;">Unsubscribe</a>
-		</td></tr>
+		${footer}
 	</table>
 </td></tr>
 </table>

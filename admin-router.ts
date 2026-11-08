@@ -1,11 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import path from 'path';
 import { OverrideValue, readOverride, writeOverride } from './override-util.js';
 import Checker from 'checker.js';
 import DbUtil from './db.js';
-import { check } from 'express-validator';
 
 const router = express.Router();
 let checker: Checker;
@@ -76,6 +73,34 @@ router.get('/status', async (_req, res) => {
 
 router.get('/users', async (_req, res) => {
 	res.json(await new DbUtil().fetchEmails());
+});
+
+router.post('/test-email', async (req, res) => {
+	const status = req.body?.status;
+	if (status !== 'open' && status !== 'closed') {
+		return res.status(400).json({ error: 'Status must be open or closed' });
+	}
+
+	const adminEmail = process.env.SMTP_ADMIN_EMAIL;
+	if (!adminEmail) {
+		console.error('Cannot send admin test email: SMTP_ADMIN_EMAIL is not configured');
+		return res.status(500).json({ error: 'SMTP_ADMIN_EMAIL is not configured' });
+	}
+
+	try {
+		const users = await new DbUtil().fetchUsers();
+		const admin = users.find((user) => user.email.trim().toLowerCase() === adminEmail.trim().toLowerCase());
+		if (!admin) {
+			console.error(`Cannot send admin test email: ${adminEmail} was not found in the user database`);
+			return res.status(500).json({ error: 'SMTP_ADMIN_EMAIL was not found in the user database' });
+		}
+
+		await checker.sendStatusEmail(status === 'open' ? 'Open' : 'Closed', admin);
+		res.json({ ok: true });
+	} catch (error) {
+		console.error('Failed to send admin test email', error);
+		res.status(500).json({ error: 'Failed to send test email' });
+	}
 });
 
 /**

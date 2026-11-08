@@ -84,6 +84,7 @@ Set in `.env`:
 | `SMTP_HOST`, `SMTP_PORT` | SMTP server for sending email, e.g. `email-smtp.us-west-2.amazonaws.com` and `587` for Amazon SES. Leave `SMTP_HOST` empty to send through Gmail. |
 | `SMTP_USER`, `SMTP_PWD` | SMTP login: SES SMTP credentials, or a Gmail account and [app password](https://support.google.com/accounts/answer/185833) |
 | `SMTP_FROM_EMAIL` | From address on alerts |
+| `SMTP_ADMIN_EMAIL` | Admin address for operational notifications and test emails sent from the admin page |
 | `SMS_SID`, `SMS_TOKEN`, `SMS_FROM` | Twilio account SID, auth token and sending number (10 digits, no +1) |
 
 ## Updating the trail map
