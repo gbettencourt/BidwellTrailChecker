@@ -133,10 +133,9 @@ export default class Checker {
 
 		console.log('sending notifications');
 
-		const smsText = `Bidwell Trail Status Update. Trail status changed to: ${trailStatus}`;
+		const smsText = `Bidwell Trail Status Update. Trail status changed to: ${trailStatus}\n\nView trail status & map: ${process.env.APP_URL}`;
 
 		try {
-			const smsClient = twilio(process.env.SMS_SID, process.env.SMS_TOKEN);
 			const transporter = this.getTransporter(true);
 
 			for (const user of users) {
@@ -157,11 +156,7 @@ export default class Checker {
 					console.log(`${user.email} has phone ${user.phone}, sending sms`);
 
 					try {
-						const message = await smsClient.messages.create({
-							body: smsText,
-							from: `+1${process.env.SMS_FROM}`,
-							to: `+1${user.phone}`
-						});
+						const message = await this.sendSms(user.phone, smsText);
 						console.log(message.sid);
 					} catch (e) {
 						console.log(e);
@@ -174,6 +169,15 @@ export default class Checker {
 		} catch (e) {
 			console.log('error sending emails', e);
 		}
+	}
+
+	async sendSms(phone: string, body: string) {
+		const smsClient = twilio(process.env.SMS_SID, process.env.SMS_TOKEN);
+		return smsClient.messages.create({
+			body,
+			from: `+1${process.env.SMS_FROM}`,
+			to: `+1${phone}`
+		});
 	}
 
 	async sendStatusEmail(trailStatus: string, user: User, transporter = this.getTransporter(true)) {

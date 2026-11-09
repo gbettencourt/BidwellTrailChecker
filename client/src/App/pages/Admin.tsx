@@ -6,6 +6,12 @@ import React, { useEffect, useState } from 'react';
 
 type OverrideValue = 'open' | 'closed' | 'auto';
 type TestEmailStatus = 'open' | 'closed';
+type TestChannel = 'email' | 'sms';
+
+type TestNotificationState = {
+	sending: TestChannel | null;
+	result: { channel: TestChannel; success: boolean; message: string } | null;
+};
 
 const MODE_LABELS: Record<OverrideValue, string> = {
 	auto: 'Following the city trail page',
@@ -78,9 +84,7 @@ function AdminControls() {
 	const [saving, setSaving] = useState(false);
 	const [saved, setSaved] = useState(false);
 	const [testEmailStatus, setTestEmailStatus] = useState<TestEmailStatus>('open');
-	const [sendingTestEmail, setSendingTestEmail] = useState(false);
-	const [testEmailSent, setTestEmailSent] = useState(false);
-	const [testEmailError, setTestEmailError] = useState('');
+	const [testNotification, setTestNotification] = useState<TestNotificationState>({ sending: null, result: null });
 
 	const fetchStatus = async () => {
 		const res = await fetch('/api/admin/status', {
@@ -123,19 +127,17 @@ function AdminControls() {
 		setSaved(true);
 	};
 
-	const sendTestEmail = async () => {
-		setSendingTestEmail(true);
-		setTestEmailSent(false);
-		setTestEmailError('');
+	const sendTestNotification = async (channel: TestChannel) => {
+		setTestNotification({ sending: channel, result: null });
 
 		try {
-			const res = await fetch('/api/admin/test-email', {
+			const res = await fetch(`/api/admin/test-${channel}`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: 'Bearer ' + localStorage.getItem('admin_token')
 				},
-				body: JSON.stringify({ status: testEmailStatus })
+				body: channel === 'email' ? JSON.stringify({ status: testEmailStatus }) : undefined
 			});
 
 			if (res.status === 401) {
@@ -146,14 +148,28 @@ function AdminControls() {
 
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || 'Failed to send test email');
+				throw new Error(data.error || `Failed to send test ${channel}`);
 			}
 
-			setTestEmailSent(true);
+			setTestNotification({
+				sending: channel,
+				result: {
+					channel,
+					success: true,
+					message: channel === 'email' ? 'Test email sent to the configured admin email address.' : 'Test SMS sent to the configured admin account phone number.'
+				}
+			});
 		} catch (error) {
-			setTestEmailError(error instanceof Error ? error.message : 'Failed to send test email');
+			setTestNotification({
+				sending: channel,
+				result: {
+					channel,
+					success: false,
+					message: error instanceof Error ? error.message : `Failed to send test ${channel}`
+				}
+			});
 		} finally {
-			setSendingTestEmail(false);
+			setTestNotification((state) => ({ ...state, sending: null }));
 		}
 	};
 
@@ -221,22 +237,41 @@ function AdminControls() {
 						fullWidth
 						color="primary"
 						value={testEmailStatus}
-						disabled={sendingTestEmail}
+						disabled={testNotification.sending !== null}
 						onChange={(_e, value: TestEmailStatus | null) => {
 							if (value) {
 								setTestEmailStatus(value);
-								setTestEmailSent(false);
-								setTestEmailError('');
+								setTestNotification({ sending: null, result: null });
 							}
 						}}
 						sx={{ '& .MuiToggleButton-root': { textTransform: 'none', fontWeight: 600 } }}>
 						<ToggleButton value="open">Open</ToggleButton>
 						<ToggleButton value="closed">Closed</ToggleButton>
 					</ToggleButtonGroup>
-					{testEmailError && <Alert severity="error">{testEmailError}</Alert>}
-					{testEmailSent && <Alert severity="success">Test email sent to the configured admin email address.</Alert>}
-					<Button variant="outlined" size="large" onClick={sendTestEmail} disabled={sendingTestEmail}>
-						{sendingTestEmail ? 'Sending…' : 'Send test email'}
+					{testNotification.result?.channel === 'email' && (
+						<Alert severity={testNotification.result.success ? 'success' : 'error'}>{testNotification.result.message}</Alert>
+					)}
+					<Button variant="outlined" size="large" onClick={() => sendTestNotification('email')} disabled={testNotification.sending !== null}>
+						{testNotification.sending === 'email' ? 'Sending…' : 'Send test email'}
+					</Button>
+				</Stack>
+
+				<Divider />
+
+				<Stack spacing={2}>
+					<Box>
+						<Typography variant="h6" component="h2">
+							Test SMS
+						</Typography>
+						<Typography color="text.secondary" sx={{ mt: 0.5 }}>
+							Send a sample text message to the phone number on the subscriber account matching the configured admin email address.
+						</Typography>
+					</Box>
+					{testNotification.result?.channel === 'sms' && (
+						<Alert severity={testNotification.result.success ? 'success' : 'error'}>{testNotification.result.message}</Alert>
+					)}
+					<Button variant="outlined" size="large" onClick={() => sendTestNotification('sms')} disabled={testNotification.sending !== null}>
+						{testNotification.sending === 'sms' ? 'Sending…' : 'Send test SMS'}
 					</Button>
 				</Stack>
 			</Stack>
