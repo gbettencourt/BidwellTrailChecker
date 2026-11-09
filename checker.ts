@@ -24,6 +24,15 @@ type Config = {
 	checkFailing: boolean;
 };
 
+export type TrailReport = {
+	type: 'status' | 'issue';
+	location: string;
+	details?: string;
+	observedStatus?: 'open' | 'closed';
+	observedAt?: string;
+	email?: string;
+};
+
 export default class Checker {
 	config: Config;
 	constructor(runScheduler = true) {
@@ -218,6 +227,21 @@ export default class Checker {
 			to: process.env.SMTP_ADMIN_EMAIL,
 			subject: 'User unsubscribed',
 			text: `user: ${email}`
+		});
+	}
+
+	async sendTrailReport(report: TrailReport) {
+		const typeLabel = report.type === 'status' ? 'Trail status discrepancy' : 'Trail issue';
+		const observedStatus = report.observedStatus ? `\nReported trail status: ${report.observedStatus}` : '';
+		const observedAt = report.observedAt ? `\nObserved at: ${report.observedAt}` : '';
+		const details = report.details ? `\n\nDetails:\n${report.details}` : '';
+		const contact = report.email ? `\nContact email: ${report.email}` : '\nContact email: not provided';
+		return this.getTransporter().sendMail({
+			from: process.env.SMTP_FROM_EMAIL,
+			to: process.env.SMTP_ADMIN_EMAIL,
+			replyTo: report.email,
+			subject: `Trail Checker: ${typeLabel}`,
+			text: `${typeLabel}\n\nLocation: ${report.location}${observedStatus}${observedAt}${details}${contact}\n\nCurrent checker status: ${this.config.lastStatus}`
 		});
 	}
 

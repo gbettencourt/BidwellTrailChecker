@@ -12,6 +12,7 @@ The homepage server-renders and hydrates the React app, including the latest tra
 - Email and text alerts when the status changes
 - Status history
 - Trail map, including trails that stay open during closures
+- Public form for trail status discrepancies and trail issue reports, emailed to the site administrator
 
 ## Tech
 

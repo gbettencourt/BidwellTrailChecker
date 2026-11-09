@@ -86,6 +86,10 @@ export function getPageMetadata(pathname: string, context: MetadataContext): Pag
 			title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
 			description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.'
 		},
+		'/report': {
+			title: 'Report Trail Status or Issue | Bidwell Trail Checker',
+			description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.'
+		},
 		'/unsubscribe': {
 			title: `Unsubscribe | ${PAGE_TITLE}`,
 			description: 'Unsubscribe from Bidwell Park trail status alerts.',

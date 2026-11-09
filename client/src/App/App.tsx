@@ -9,6 +9,7 @@ import { SignUp } from './pages/SignUp';
 import { Unsubscribe } from './pages/Unsubscribe';
 import { AdminPage } from './pages/Admin';
 import { StatusHistory } from './pages/StatusHistory';
+import { TrailReportPage } from './pages/TrailReport';
 import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
 import type { AppInitialData } from './app-data';
@@ -30,6 +31,7 @@ export const App: React.FC<AppProps> = ({ initialUrl, initialData }) => {
 				<Route path="/unsubscribe" element={<Unsubscribe />} />
 				<Route path="/admin" element={<AdminPage />} />
 				<Route path="/history" element={<StatusHistory />} />
+				<Route path="/report" element={<TrailReportPage />} />
 				<Route
 					path="/map"
 					element={
@@ -111,6 +113,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 						<Button component={RouterLink} to="/map" color="inherit" startIcon={<MapOutlined />} sx={{ minWidth: 0 }}>
 							Map
 						</Button>
+						<Button component={RouterLink} to="/report" color="inherit" sx={{ minWidth: 0 }}>
+							Report
+						</Button>
 						<IconButton aria-label="GitHub repository" color="inherit" href="https://github.com/gbettencourt/BidwellTrailChecker">
 							<GitHub />
 						</IconButton>
@@ -134,6 +139,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 						<Stack direction="row" spacing={3}>
 							<Link component={RouterLink} to="/unsubscribe" variant="body2" color="text.secondary" underline="hover">
 								Unsubscribe
+							</Link>
+							<Link component={RouterLink} to="/report" variant="body2" color="text.secondary" underline="hover">
+								Report a trail issue
 							</Link>
 							<Link href={TRAIL_PAGE_URL} target="_blank" rel="noopener" variant="body2" color="text.secondary" underline="hover">
 								City trail page

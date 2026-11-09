@@ -94,6 +94,21 @@ app.get('/history', async (_req, res) => {
 	);
 });
 
+app.get('/report', async (_req, res) => {
+	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+	const page = {
+		title: 'Report Trail Status or Issue | Bidwell Trail Checker',
+		description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.',
+		heading: 'Report a trail status or issue'
+	};
+	res.type('html').send(
+		renderPage(html, {
+			metadata: await renderPageMetadata('/report', 'Unknown', undefined, seoSiteUrl),
+			markup: await renderPageContent(page.heading, page.description)
+		})
+	);
+});
+
 // Serve the static files from the React app
 app.use(express.static(join(__dirname, '/client/build')));
 
@@ -104,6 +119,49 @@ app.get('/api/trailstatus', (req, res) => {
 app.get('/api/statushistory', async (req, res) => {
 	res.json(await statusHistory());
 });
+
+app.post(
+	'/api/trail-report',
+	[
+		check('type').isIn(['status', 'issue']),
+		check('location').trim().isLength({ min: 2, max: 120 }),
+		check('details')
+			.if(body('type').equals('issue'))
+			.trim()
+			.isLength({ min: 5, max: 2000 }),
+		check('observedStatus')
+			.if(body('type').equals('status'))
+			.isIn(['open', 'closed']),
+		check('observedAt').optional({ checkFalsy: true }).isISO8601(),
+		check('email').optional({ checkFalsy: true }).isEmail().normalizeEmail()
+	],
+	async (req, res) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			return res.status(400).json({ success: false, error: 'Please check the report details and try again.' });
+		}
+
+		if (!process.env.SMTP_ADMIN_EMAIL) {
+			console.error('Cannot send trail report: SMTP_ADMIN_EMAIL is not configured');
+			return res.status(500).json({ success: false, error: 'Trail reports are temporarily unavailable.' });
+		}
+
+		try {
+			await checker.sendTrailReport({
+				type: req.body.type,
+				location: req.body.location.trim(),
+				details: req.body.type === 'issue' ? req.body.details.trim() : undefined,
+				observedStatus: req.body.type === 'status' ? req.body.observedStatus : undefined,
+				observedAt: req.body.observedAt || undefined,
+				email: req.body.email || undefined
+			});
+			return res.json({ success: true });
+		} catch (error) {
+			console.error('Failed to send trail report', error);
+			return res.status(500).json({ success: false, error: 'Unable to send your report right now. Please try again later.' });
+		}
+	}
+);
 
 app.post(
 	'/api/registeremail',
