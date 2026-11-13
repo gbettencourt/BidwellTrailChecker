@@ -1,8 +1,10 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { GitHub } from '@mui/icons-material';
+import HistoryIcon from '@mui/icons-material/History';
+import MenuIcon from '@mui/icons-material/Menu';
 import BikeIcon from '@mui/icons-material/DirectionsBike';
 import MapOutlined from '@mui/icons-material/MapOutlined';
-import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Stack } from '@mui/material';
+import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Menu, MenuItem, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { Route, Routes, BrowserRouter, MemoryRouter, Link as RouterLink, useLocation } from 'react-router-dom';
 import { SignUp } from './pages/SignUp';
@@ -65,8 +67,18 @@ type LayoutProps = {
 	children: ReactNode;
 };
 
+// header nav: Map, History, Report. On small screens the inline links
+// collapse into a hamburger menu so the title and GitHub link keep room.
+const NAV_ITEMS = [
+	{ label: 'Map', to: '/map' },
+	{ label: 'History', to: '/history' },
+	{ label: 'Report', to: '/report' }
+];
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
 	const isMap = useLocation().pathname.toLowerCase() === '/map';
+	const [navAnchor, setNavAnchor] = useState<HTMLElement | null>(null);
+	const navOpen = Boolean(navAnchor);
 
 	return (
 		<Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -101,12 +113,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 								Bidwell Trail Checker
 							</Typography>
 						</Box>
-						<Button component={RouterLink} to="/map" color="inherit" startIcon={<MapOutlined />} sx={{ minWidth: 0 }}>
-							Map
-						</Button>
-						<Button component={RouterLink} to="/report" color="inherit" sx={{ minWidth: 0 }}>
-							Report
-						</Button>
+						<Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center' }}>
+							<Button component={RouterLink} to="/map" color="inherit" startIcon={<MapOutlined />} sx={{ minWidth: 0 }}>
+								Map
+							</Button>
+							<Button component={RouterLink} to="/history" color="inherit" startIcon={<HistoryIcon />} sx={{ minWidth: 0 }}>
+								History
+							</Button>
+							<Button component={RouterLink} to="/report" color="inherit" sx={{ minWidth: 0 }}>
+								Report
+							</Button>
+						</Box>
+						<IconButton
+							aria-label="Menu"
+							aria-haspopup="true"
+							aria-expanded={navOpen ? 'true' : undefined}
+							color="inherit"
+							onClick={(e) => setNavAnchor(e.currentTarget)}
+							sx={{ display: { xs: 'flex', sm: 'none' } }}>
+							<MenuIcon />
+						</IconButton>
+						<Menu anchorEl={navAnchor} open={navOpen} onClose={() => setNavAnchor(null)}>
+							{NAV_ITEMS.map(({ label, to }) => (
+								<MenuItem key={to} component={RouterLink} to={to} onClick={() => setNavAnchor(null)}>
+									{label}
+								</MenuItem>
+							))}
+						</Menu>
 						<IconButton aria-label="GitHub repository" color="inherit" href="https://github.com/gbettencourt/BidwellTrailChecker">
 							<GitHub />
 						</IconButton>
