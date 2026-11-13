@@ -4,7 +4,7 @@ import type { Feature, FeatureCollection, Geometry, LineString } from 'geojson';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Alert, Box, FormControlLabel, List, ListItemButton, ListItemText, Paper, Skeleton, Stack, Switch, TextField, Typography } from '@mui/material';
-import { TRAIL_INFO } from '../data/trailInfo';
+import { TRAIL_INFO, TRAIL_DIFFICULTY, type TrailDifficulty } from '../data/trailInfo';
 import ElevationProfile, { type TrailElevation } from '../components/ElevationProfile';
 import type { TrailStatusState } from '../components/TrailStatusBanner';
 
@@ -87,6 +87,7 @@ type TrailGroup = {
 	typeLabel: string;
 	alwaysOpen: boolean;
 	distanceMi: number;
+	difficulty?: TrailDifficulty;
 };
 
 // group the (often split) segments of each named trail, so the list shows
@@ -115,6 +116,7 @@ const trailGroups = (trails: Trails): TrailGroup[] => {
 				representativeId: String(representative.id),
 				typeLabel: typeFor(representative).label,
 				alwaysOpen: features.some((f) => f.properties.alwaysOpen),
+				difficulty: TRAIL_DIFFICULTY[name],
 				// total length of all the trail's segments in the map data
 				distanceMi: features.reduce((sum, f) => sum + segmentLengthMi(f), 0)
 			};
@@ -211,7 +213,13 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 		}
 		const distanceMi = title === 'Unnamed trail' ? segmentLengthMi(feature) : (trailDistanceByName.get(title) ?? segmentLengthMi(feature));
 		const elevation = elevations[title];
-		const details = [typeFor(feature).label, formatMiles(distanceMi), elevation && `↑${elevation.gainFt} ft`, surface && `${surface} surface`]
+		const details = [
+			typeFor(feature).label,
+			formatMiles(distanceMi),
+			elevation && `↑${elevation.gainFt} ft`,
+			TRAIL_DIFFICULTY[title],
+			surface && `${surface} surface`
+		]
 			.filter(Boolean)
 			.join(' · ');
 		const openNote = alwaysOpen
@@ -340,6 +348,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 				<ElevationProfile
 					name={selectedGroup.name}
 					distanceMi={selectedGroup.distanceMi}
+					difficulty={selectedGroup.difficulty}
 					elevation={selectedElevation}
 					onClose={() => setSelectedName(null)}
 				/>
@@ -367,7 +376,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 			</Stack>
 
 			<Typography variant="body2" color="text.secondary" sx={{ px: 0.5 }}>
-				Trail data from OpenStreetMap and may be incomplete. Follow posted signs and closures at the park.
+				Trail data from OpenStreetMap and may be incomplete. Difficulty ratings from the City of Chico's Upper Bidwell Park trails map. Follow posted signs and closures at the park.
 			</Typography>
 		</Stack>
 	);

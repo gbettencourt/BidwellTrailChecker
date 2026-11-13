@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import type { TrailDifficulty } from '../data/trailInfo';
 
 export type ElevationPoint = { d: number; e: number };
 
@@ -13,6 +14,11 @@ export type TrailElevation = {
 	points: ElevationPoint[];
 };
 
+// green for Easy, blue for Moderate, black for Difficult — by the hardest
+// end of the rating, so "Moderate to Difficult" reads as black
+const difficultyColor = (difficulty: TrailDifficulty) =>
+	difficulty === 'Easy' ? '#2e9e4f' : difficulty.endsWith('Difficult') ? '#222' : '#1976d2';
+
 const WIDTH = 300;
 const HEIGHT = 110;
 const PAD_X = 4;
@@ -24,10 +30,12 @@ const PAD_BOTTOM = 18;
 const ElevationProfile: React.FC<{
 	name: string;
 	distanceMi: number;
+	difficulty?: TrailDifficulty;
 	elevation?: TrailElevation;
 	onClose: () => void;
-}> = ({ name, distanceMi, elevation, onClose }) => {
+}> = ({ name, distanceMi, difficulty, elevation, onClose }) => {
 	const stats = [
+		{ label: 'Difficulty', value: difficulty ?? '—', dot: difficulty ? difficultyColor(difficulty) : undefined },
 		{ label: 'Distance', value: `${distanceMi >= 1 ? distanceMi.toFixed(1) : distanceMi.toFixed(2)} mi` },
 		{ label: 'Elevation gain', value: elevation ? `↑${elevation.gainFt.toLocaleString()} ft` : '—' },
 		{ label: 'Elevation loss', value: elevation ? `↓${elevation.lossFt.toLocaleString()} ft` : '—' },
@@ -57,12 +65,26 @@ const ElevationProfile: React.FC<{
 				</IconButton>
 			</Stack>
 			<Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: 0.5 }}>
-				{stats.map(({ label, value }) => (
+				{stats.map(({ label, value, dot }) => (
 					<Box key={label}>
 						<Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
 							{label}
 						</Typography>
 						<Typography variant="body2" sx={{ fontWeight: 600 }}>
+							{dot && (
+								<Box
+									component="span"
+									sx={{
+										display: 'inline-block',
+										width: 10,
+										height: 10,
+										borderRadius: '50%',
+										bgcolor: dot,
+										mr: 0.75,
+										verticalAlign: 'baseline'
+									}}
+								/>
+							)}
 							{value}
 						</Typography>
 					</Box>
