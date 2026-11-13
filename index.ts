@@ -65,18 +65,20 @@ app.get('/', async (_req, res) => {
 
 app.get('/map', async (_req, res) => {
 	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	const page = {
-		title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
-		description:
-			'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.',
-		heading: 'Upper Bidwell Park trail map'
+	// same server-seeded status as the homepage, so the map banner is in
+	// the first HTML instead of appearing only after a client fetch
+	const status = checker.currentStatus();
+	const history = await statusHistory();
+	const initialData = {
+		trailStatus: status.trailStatus,
+		lastCheck: status.lastCheck.toISOString(),
+		statusSince: history.current,
+		captchaCode: randomInt(1000, 9999),
+		renderedAt: Date.now(),
+		siteUrl: seoSiteUrl
 	};
-	res.type('html').send(
-		renderPage(html, {
-			metadata: await renderPageMetadata('/map', 'Unknown', undefined, seoSiteUrl),
-			markup: await renderPageContent(page.heading, page.description)
-		})
-	);
+	const renderedApp = await renderApp('/map', initialData);
+	res.type('html').send(renderPage(html, { ...renderedApp, initialData }));
 });
 
 app.get('/history', async (_req, res) => {
