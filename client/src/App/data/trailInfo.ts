@@ -10,6 +10,35 @@ export type TrailInfo = {
 	alwaysOpen?: boolean;
 };
 
+// difficulty ratings from the City of Chico's "Explore Upper Bidwell Park"
+// trails map (https://explore-butte.files.svdcdn.com/production/documents/upper-bidwell-park-trails-map-web.pdf),
+// keyed by the trail name shown on our map. Only trails the map rates are
+// listed — local names the map doesn't cover (Cat Run, Secret Trail,
+// Valentines, NYP, Disc Golf Course Access Road, Strava Town) have none.
+export type TrailDifficulty =
+	| 'Easy'
+	| 'Easy to Moderate'
+	| 'Moderate'
+	| 'Moderate to Difficult'
+	| 'Difficult'
+	| 'Easy to Difficult';
+
+export const TRAIL_DIFFICULTY: Record<string, TrailDifficulty> = {
+	'Annie Bidwell Trail': 'Easy to Difficult',
+	'B Trail': 'Difficult',
+	'Guardian Trail': 'Easy to Moderate',
+	'Live Oak Trail': 'Difficult',
+	'Lower Trail': 'Easy',
+	Maidu: 'Moderate',
+	'Manzanita Trail': 'Moderate',
+	'Middle Trail': 'Easy to Moderate',
+	'North Rim Trail': 'Moderate',
+	'South Rim Trail': 'Moderate to Difficult',
+	// the map calls it Ten Mile House Road; same route as our Ten Mile House Trail
+	'Ten Mile House Trail': 'Moderate',
+	'Upper Trail': 'Moderate'
+};
+
 export const TRAIL_INFO: Record<string, TrailInfo> = {
 	// unnamed trails south of the park, between the park boundary and CA 32, that stay open during closures
 	'way/421269240': { alwaysOpen: true },
