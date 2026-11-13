@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, LayersControl, useMap } from 'react-leaflet';
 import type { Feature, FeatureCollection, Geometry, LineString } from 'geojson';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Alert, Box, FormControlLabel, Paper, Skeleton, Stack, Switch, Typography } from '@mui/material';
+import { Alert, Box, FormControlLabel, List, ListItemButton, ListItemText, Paper, Skeleton, Stack, Switch, TextField, Typography } from '@mui/material';
 import { TRAIL_INFO } from '../data/trailInfo';
 
 type TrailProps = {
@@ -55,6 +55,51 @@ const withLocalInfo = (trails: Trails): Trails => ({
 	})
 });
 
+// display name for a trail segment: its OSM / local name, or a generic label
+const trailTitle = (feature: TrailFeature) => {
+	const { name, alwaysOpen } = feature.properties;
+	return name ?? (alwaysOpen ? `${ALWAYS_OPEN_AREA} trail` : 'Unnamed trail');
+};
+
+type TrailGroup = {
+	name: string;
+	features: TrailFeature[];
+	representativeId: string;
+	typeLabel: string;
+	alwaysOpen: boolean;
+};
+
+// group the (often split) segments of each named trail, so the list shows
+// one entry per trail instead of one per OSM way. Unnamed segments are
+// left out of the list — there is nothing to search for by name.
+const trailGroups = (trails: Trails): TrailGroup[] => {
+	const byName = new Map<string, TrailFeature[]>();
+	for (const feature of trails.features) {
+		const title = trailTitle(feature);
+		if (title === 'Unnamed trail') continue;
+		const group = byName.get(title) ?? [];
+		group.push(feature);
+		byName.set(title, group);
+	}
+	return [...byName.entries()]
+		.map(([name, features]) => {
+			// label the longest segment of the trail, so a name appears once
+			// on the map instead of once per split segment
+			const representative = [...features].sort(
+				(a, b) =>
+					((b.geometry as LineString).coordinates.length ?? 0) - ((a.geometry as LineString).coordinates.length ?? 0)
+			)[0];
+			return {
+				name,
+				features,
+				representativeId: String(representative.id),
+				typeLabel: typeFor(representative).label,
+				alwaysOpen: features.some((f) => f.properties.alwaysOpen)
+			};
+		})
+		.sort((a, b) => a.name.localeCompare(b.name));
+};
+
 const FitToTrails: React.FC<{ trails: Trails }> = ({ trails }) => {
 	const map = useMap();
 	useEffect(() => {
@@ -64,11 +109,24 @@ const FitToTrails: React.FC<{ trails: Trails }> = ({ trails }) => {
 	return null;
 };
 
+// captures the Leaflet map instance so the trail list can zoom to a trail
+const CaptureMap: React.FC<{ onMap: (map: L.Map) => void }> = ({ onMap }) => {
+	const map = useMap();
+	useEffect(() => {
+		onMap(map);
+	}, [map, onMap]);
+	return null;
+};
+
 const TrailMap: React.FC = () => {
 	const [trails, setTrails] = useState<Trails>();
 	const [error, setError] = useState(false);
 	const [showAlwaysOpen, setShowAlwaysOpen] = useState(false);
 	const [parkClosed, setParkClosed] = useState(false);
+	const [query, setQuery] = useState('');
+	const [selectedName, setSelectedName] = useState<string | null>(null);
+	const mapRef = useRef<L.Map | null>(null);
+	const layersRef = useRef(new Map<string, L.Layer>());
 
 	useEffect(() => {
 		fetch('/trails.geojson')
@@ -96,9 +154,32 @@ const TrailMap: React.FC = () => {
 
 	const style = styleFor(showAlwaysOpen);
 
+	const groups = useMemo(() => (trails ? trailGroups(trails) : []), [trails]);
+	const representativeIds = useMemo(() => new Set(groups.map((g) => g.representativeId)), [groups]);
+	const filteredGroups = useMemo(() => {
+		const q = query.trim().toLowerCase();
+		return q ? groups.filter((g) => g.name.toLowerCase().includes(q)) : groups;
+	}, [groups, query]);
+
+	// zoom to a trail from the list and open its popup
+	const selectTrail = (group: TrailGroup) => {
+		setSelectedName(group.name);
+		const map = mapRef.current;
+		if (!map) return;
+		const bounds = L.geoJSON({ type: 'FeatureCollection', features: group.features } as Trails).getBounds();
+		if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
+		const layer = layersRef.current.get(group.representativeId);
+		if (layer) layer.openPopup();
+	};
+
 	const onEachTrail = (feature: TrailFeature, layer: L.Layer) => {
-		const { name, surface, alwaysOpen } = feature.properties;
-		const title = name ?? (alwaysOpen ? `${ALWAYS_OPEN_AREA} trail` : 'Unnamed trail');
+		const { surface, alwaysOpen } = feature.properties;
+		const title = trailTitle(feature);
+		layersRef.current.set(String(feature.id), layer);
+		// print the trail name on the map once per trail, on its longest segment
+		if (title !== 'Unnamed trail' && representativeIds.has(String(feature.id))) {
+			layer.bindTooltip(title, { permanent: true, direction: 'center', className: 'trail-label', interactive: false });
+		}
 		const details = [typeFor(feature).label, surface && `${surface} surface`].filter(Boolean).join(' · ');
 		const openNote = alwaysOpen
 			? `<br/><span style="color:${ALWAYS_OPEN_COLOR};font-weight:600">${ALWAYS_OPEN_AREA} · open during park closures</span>`
@@ -136,6 +217,37 @@ const TrailMap: React.FC = () => {
 				label={`Highlight ${ALWAYS_OPEN_AREA}, which stays open when the park is closed`}
 			/>
 
+			{trails && (
+				<Paper variant="outlined" sx={{ p: 2 }}>
+					<TextField
+						fullWidth
+						label="Find a trail"
+						placeholder="Search trails…"
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						size="small"
+					/>
+					<List dense sx={{ maxHeight: 220, overflow: 'auto', mt: 1 }}>
+						{filteredGroups.map((group) => (
+							<ListItemButton key={group.name} selected={selectedName === group.name} onClick={() => selectTrail(group)}>
+								<ListItemText
+										primary={group.name}
+										secondary={`${group.typeLabel}${group.alwaysOpen ? ' · Stays open during park closures' : ''}`}
+									/>
+							</ListItemButton>
+						))}
+						{filteredGroups.length === 0 && (
+							<Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1 }}>
+								No trails match &ldquo;{query.trim()}&rdquo;.
+							</Typography>
+						)}
+					</List>
+					<Typography variant="body2" color="text.secondary">
+						{filteredGroups.length} of {groups.length} trails
+					</Typography>
+				</Paper>
+			)}
+
 			<Paper
 				sx={{
 					overflow: 'hidden',
@@ -143,6 +255,18 @@ const TrailMap: React.FC = () => {
 					minHeight: 360,
 					position: 'relative',
 					'& .leaflet-container': { height: '100%', fontFamily: 'inherit' },
+					// permanent trail-name labels drawn on the map
+					'& .trail-label': {
+						background: 'rgba(255, 255, 255, 0.88)',
+						border: '1px solid rgba(0, 0, 0, 0.15)',
+						borderRadius: 4,
+						boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+						color: '#222',
+						fontSize: 11,
+						fontWeight: 600,
+						padding: '1px 5px'
+					},
+					'& .trail-label::before': { display: 'none' },
 					// darken the street map in dark mode so it doesn't glare (satellite imagery is left as is)
 					'@media (prefers-color-scheme: dark)': {
 						'& .street-tiles': { filter: 'invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9)' }
@@ -150,6 +274,7 @@ const TrailMap: React.FC = () => {
 				}}>
 				{!trails && !error && <Skeleton variant="rectangular" sx={{ position: 'absolute', inset: 0, height: '100%', zIndex: 1000 }} />}
 				<MapContainer center={[39.79, -121.75]} zoom={13} scrollWheelZoom>
+					<CaptureMap onMap={(map) => { mapRef.current = map; }} />
 					<LayersControl position="topright">
 						<LayersControl.BaseLayer checked name="Map">
 							<TileLayer
