@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Alert, Box, FormControlLabel, List, ListItemButton, ListItemText, Paper, Skeleton, Stack, Switch, TextField, Typography } from '@mui/material';
 import { TRAIL_INFO } from '../data/trailInfo';
+import type { TrailStatusState } from '../components/TrailStatusBanner';
 
 type TrailProps = {
 	name?: string;
@@ -118,11 +119,10 @@ const CaptureMap: React.FC<{ onMap: (map: L.Map) => void }> = ({ onMap }) => {
 	return null;
 };
 
-const TrailMap: React.FC = () => {
+const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 	const [trails, setTrails] = useState<Trails>();
 	const [error, setError] = useState(false);
 	const [showAlwaysOpen, setShowAlwaysOpen] = useState(false);
-	const [parkClosed, setParkClosed] = useState(false);
 	const [query, setQuery] = useState('');
 	const [selectedName, setSelectedName] = useState<string | null>(null);
 	const mapRef = useRef<L.Map | null>(null);
@@ -140,17 +140,12 @@ const TrailMap: React.FC = () => {
 				setError(true);
 			});
 
-		// when the park trails are closed, start with the always-open trails highlighted
-		fetch('/api/trailstatus')
-			.then((res) => res.json())
-			.then((status) => {
-				if (status.trailStatus === 'Closed') {
-					setParkClosed(true);
-					setShowAlwaysOpen(true);
-				}
-			})
-			.catch(() => {});
 	}, []);
+
+	// when the park trails are closed, start with the always-open trails highlighted
+	useEffect(() => {
+		if (status === 'Closed') setShowAlwaysOpen(true);
+	}, [status]);
 
 	const style = styleFor(showAlwaysOpen);
 
@@ -206,11 +201,6 @@ const TrailMap: React.FC = () => {
 			</Box>
 
 			{error && <Alert severity="error">The trail map couldn't be loaded. Please try again later.</Alert>}
-			{parkClosed && (
-				<Alert severity="warning">
-					The park trails are closed right now. The {ALWAYS_OPEN_AREA} trails, highlighted in green, stay open during closures.
-				</Alert>
-			)}
 
 			<FormControlLabel
 				control={<Switch checked={showAlwaysOpen} onChange={(e) => setShowAlwaysOpen(e.target.checked)} color="success" />}

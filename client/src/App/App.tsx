@@ -1,11 +1,12 @@
-import React, { lazy, ReactNode, Suspense } from 'react';
+import React, { ReactNode } from 'react';
 import { GitHub } from '@mui/icons-material';
 import BikeIcon from '@mui/icons-material/DirectionsBike';
 import MapOutlined from '@mui/icons-material/MapOutlined';
-import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Stack, Skeleton } from '@mui/material';
+import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { Route, Routes, BrowserRouter, MemoryRouter, Link as RouterLink, useLocation } from 'react-router-dom';
 import { SignUp } from './pages/SignUp';
+import { MapPage } from './pages/MapPage';
 import { Unsubscribe } from './pages/Unsubscribe';
 import { AdminPage } from './pages/Admin';
 import { StatusHistory } from './pages/StatusHistory';
@@ -14,9 +15,6 @@ import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
 import type { AppInitialData } from './app-data';
 import { ClientPageMetadata } from './components/PageMetadata';
-
-// Leaflet is large, so only load it when someone opens the map
-const TrailMap = lazy(() => import('./pages/TrailMap'));
 
 type AppProps = {
 	initialUrl?: string;
@@ -32,14 +30,7 @@ export const App: React.FC<AppProps> = ({ initialUrl, initialData }) => {
 				<Route path="/admin" element={<AdminPage />} />
 				<Route path="/history" element={<StatusHistory />} />
 				<Route path="/report" element={<TrailReportPage />} />
-				<Route
-					path="/map"
-					element={
-						<Suspense fallback={<Skeleton variant="rounded" height="70vh" />}>
-							<TrailMap />
-						</Suspense>
-					}
-				/>
+				<Route path="/map" element={<MapPage initialData={initialData} />} />
 			</Routes>
 		</Layout>
 	);
