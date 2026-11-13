@@ -81,9 +81,14 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 						<Typography variant="body2" color="text.secondary">
 							{isKnown ? (checked ? `Checked ${checked}` : '') : 'Status is not available right now. Check back soon.'}
 						</Typography>
-						<Link component={RouterLink} to="/history" variant="body2" underline="hover">
-							View history →
-						</Link>
+						<Stack direction="row" spacing={2}>
+							<Link component={RouterLink} to="/map" variant="body2" underline="hover">
+								View map →
+							</Link>
+							<Link component={RouterLink} to="/history" variant="body2" underline="hover">
+								View history →
+							</Link>
+						</Stack>
 					</Stack>
 				</>
 			)}
