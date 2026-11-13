@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { Captcha } from '../components/Captcha';
+import { TrailStatusBanner, type TrailStatusState } from '../components/TrailStatusBanner';
 import { getRandomInt } from '../util/Util';
 
 type ReportType = 'status' | 'issue';
@@ -20,7 +21,26 @@ interface FormValues {
 export const TrailReportPage: React.FC = () => {
 	const [submitted, setSubmitted] = useState(false);
 	const [submitError, setSubmitError] = useState('');
+	const [status, setStatus] = useState<TrailStatusState>('loading');
 	const captchaCode = useRef(getRandomInt(1000, 9999));
+
+	// what the site currently shows, so a reporter can compare it with the signs
+	const fetchStatus = useCallback(async () => {
+		try {
+			const res = await fetch('/api/trailstatus');
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const data = await res.json();
+			setStatus(data.trailStatus === 'Open' || data.trailStatus === 'Closed' ? data.trailStatus : 'unknown');
+		} catch (e) {
+			console.error('Failed to fetch trail status:', e);
+			setStatus('unknown');
+		}
+	}, []);
+
+	useEffect(() => {
+		fetchStatus();
+	}, [fetchStatus]);
+
 	const {
 		register,
 		handleSubmit,
@@ -92,6 +112,8 @@ export const TrailReportPage: React.FC = () => {
 						Let us know if trailhead signs disagree with the city status page, or report a problem such as a downed tree.
 					</Typography>
 				</Box>
+
+				<TrailStatusBanner status={status} onRetry={fetchStatus} />
 
 				<Alert severity="info">
 					Reports are sent to the site administrator for review. They do not automatically change the status shown here.
