@@ -63,12 +63,29 @@ const trailTitle = (feature: TrailFeature) => {
 	return name ?? (alwaysOpen ? `${ALWAYS_OPEN_AREA} trail` : 'Unnamed trail');
 };
 
+// length of one trail segment in miles, from its GeoJSON coordinates
+const segmentLengthMi = (feature: TrailFeature) => {
+	const coords = (feature.geometry as LineString).coordinates;
+	let total = 0;
+	for (let i = 1; i < coords.length; i++) {
+		const [lon1, lat1] = coords[i - 1].map((d) => (d * Math.PI) / 180);
+		const [lon2, lat2] = coords[i].map((d) => (d * Math.PI) / 180);
+		const dLat = lat2 - lat1;
+		const dLon = lon2 - lon1;
+		total += 3958.8 * 2 * Math.asin(Math.sqrt(Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2));
+	}
+	return total;
+};
+
+const formatMiles = (mi: number) => `${mi >= 1 ? mi.toFixed(1) : mi.toFixed(2)} mi`;
+
 type TrailGroup = {
 	name: string;
 	features: TrailFeature[];
 	representativeId: string;
 	typeLabel: string;
 	alwaysOpen: boolean;
+	distanceMi: number;
 };
 
 // group the (often split) segments of each named trail, so the list shows
@@ -96,7 +113,9 @@ const trailGroups = (trails: Trails): TrailGroup[] => {
 				features,
 				representativeId: String(representative.id),
 				typeLabel: typeFor(representative).label,
-				alwaysOpen: features.some((f) => f.properties.alwaysOpen)
+				alwaysOpen: features.some((f) => f.properties.alwaysOpen),
+				// total length of all the trail's segments in the map data
+				distanceMi: features.reduce((sum, f) => sum + segmentLengthMi(f), 0)
 			};
 		})
 		.sort((a, b) => a.name.localeCompare(b.name));
@@ -152,6 +171,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 
 	const groups = useMemo(() => (trails ? trailGroups(trails) : []), [trails]);
 	const representativeIds = useMemo(() => new Set(groups.map((g) => g.representativeId)), [groups]);
+	const trailDistanceByName = useMemo(() => new Map(groups.map((g) => [g.name, g.distanceMi])), [groups]);
 	const filteredGroups = useMemo(() => {
 		const q = query.trim().toLowerCase();
 		return q ? groups.filter((g) => g.name.toLowerCase().includes(q)) : groups;
@@ -176,7 +196,8 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 		if (title !== 'Unnamed trail' && representativeIds.has(String(feature.id))) {
 			layer.bindTooltip(title, { permanent: true, direction: 'center', className: 'trail-label', interactive: false });
 		}
-		const details = [typeFor(feature).label, surface && `${surface} surface`].filter(Boolean).join(' · ');
+		const distanceMi = title === 'Unnamed trail' ? segmentLengthMi(feature) : (trailDistanceByName.get(title) ?? segmentLengthMi(feature));
+		const details = [typeFor(feature).label, formatMiles(distanceMi), surface && `${surface} surface`].filter(Boolean).join(' · ');
 		const openNote = alwaysOpen
 			? `<br/><span style="color:${ALWAYS_OPEN_COLOR};font-weight:600">${ALWAYS_OPEN_AREA} · open during park closures</span>`
 			: '';
@@ -223,7 +244,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 							<ListItemButton key={group.name} selected={selectedName === group.name} onClick={() => selectTrail(group)}>
 								<ListItemText
 										primary={group.name}
-										secondary={`${group.typeLabel}${group.alwaysOpen ? ' · Stays open during park closures' : ''}`}
+										secondary={`${group.typeLabel} · ${formatMiles(group.distanceMi)}${group.alwaysOpen ? ' · Stays open during park closures' : ''}`}
 									/>
 							</ListItemButton>
 						))}
