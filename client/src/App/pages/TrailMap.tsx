@@ -18,9 +18,9 @@ type Trails = FeatureCollection<LineString, TrailProps>;
 type TrailFeature = Feature<Geometry, TrailProps>;
 
 // SVG stroke attributes can't use CSS variables, so these are plain colors that read on both map styles
-const TRAIL_TYPES: Record<string, { label: string; color: string }> = {
+const TRAIL_TYPES: Record<string, { label: string; color: string; dashArray?: string }> = {
 	path: { label: 'Trail', color: '#d9622b' },
-	track: { label: 'Fire road', color: '#8a5a2b' }
+	track: { label: 'Fire road', color: '#8a5a2b', dashArray: '8 6' }
 };
 const DEFAULT_TYPE = TRAIL_TYPES.path;
 const ALWAYS_OPEN_COLOR = '#1f9d55';
@@ -38,7 +38,8 @@ const styleFor =
 			weight: 4,
 			opacity: 0.9,
 			lineCap: 'round',
-			lineJoin: 'round'
+			lineJoin: 'round',
+			dashArray: typeFor(feature).dashArray
 		};
 		if (!highlightOpen) return base;
 		// fade everything else so the always-open trails stand out
@@ -295,10 +296,18 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 			</Paper>
 
 			<Stack direction="row" spacing={2.5} sx={{ flexWrap: 'wrap', rowGap: 1, px: 0.5 }}>
-				{[...Object.values(TRAIL_TYPES), { label: `${ALWAYS_OPEN_AREA} (open during closures)`, color: ALWAYS_OPEN_COLOR }].map(
-					({ label, color }) => (
+				{[...Object.values(TRAIL_TYPES), { label: `${ALWAYS_OPEN_AREA} (open during closures)`, color: ALWAYS_OPEN_COLOR, dashArray: undefined }].map(
+					({ label, color, dashArray }: { label: string; color: string; dashArray?: string }) => (
 						<Stack key={label} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-							<Box sx={{ width: 22, height: 4, borderRadius: 2, bgcolor: color }} />
+							<Box
+								sx={{
+									width: 22,
+									height: dashArray ? 0 : 4,
+									borderRadius: 2,
+									bgcolor: dashArray ? 'transparent' : color,
+									borderTop: dashArray ? `3px dashed ${color}` : 'none'
+								}}
+							/>
 							<Typography variant="body2" color="text.secondary">
 								{label}
 							</Typography>
