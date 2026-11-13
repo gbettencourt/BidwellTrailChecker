@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Alert, Box, FormControlLabel, List, ListItemButton, ListItemText, Paper, Skeleton, Stack, Switch, TextField, Typography } from '@mui/material';
 import { TRAIL_INFO } from '../data/trailInfo';
+import ElevationProfile, { type TrailElevation } from '../components/ElevationProfile';
 import type { TrailStatusState } from '../components/TrailStatusBanner';
 
 type TrailProps = {
@@ -141,6 +142,7 @@ const CaptureMap: React.FC<{ onMap: (map: L.Map) => void }> = ({ onMap }) => {
 
 const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 	const [trails, setTrails] = useState<Trails>();
+	const [elevations, setElevations] = useState<Record<string, TrailElevation>>({});
 	const [error, setError] = useState(false);
 	const [showAlwaysOpen, setShowAlwaysOpen] = useState(false);
 	const [query, setQuery] = useState('');
@@ -159,7 +161,15 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 				console.error('Failed to load trails:', e);
 				setError(true);
 			});
-
+		// precomputed elevations (scripts/compute-trail-elevations.mjs);
+		// the map still works without them, just without profiles
+		fetch('/trail-elevations.json')
+			.then((res) => {
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				return res.json();
+			})
+			.then((data: { trails: Record<string, TrailElevation> }) => setElevations(data.trails))
+			.catch((e) => console.error('Failed to load trail elevations:', e));
 	}, []);
 
 	// when the park trails are closed, start with the always-open trails highlighted
@@ -172,16 +182,19 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 	const groups = useMemo(() => (trails ? trailGroups(trails) : []), [trails]);
 	const representativeIds = useMemo(() => new Set(groups.map((g) => g.representativeId)), [groups]);
 	const trailDistanceByName = useMemo(() => new Map(groups.map((g) => [g.name, g.distanceMi])), [groups]);
+	const selectedGroup = useMemo(() => groups.find((g) => g.name === selectedName) ?? null, [groups, selectedName]);
+	const selectedElevation = selectedGroup ? elevations[selectedGroup.name] : undefined;
 	const filteredGroups = useMemo(() => {
 		const q = query.trim().toLowerCase();
 		return q ? groups.filter((g) => g.name.toLowerCase().includes(q)) : groups;
 	}, [groups, query]);
 
-	// zoom to a trail from the list and open its popup
-	const selectTrail = (group: TrailGroup) => {
+	// select a trail and show its elevation profile; list clicks also
+	// zoom to it, map taps don't (the popup already opens on tap)
+	const selectTrail = (group: TrailGroup, zoom = true) => {
 		setSelectedName(group.name);
 		const map = mapRef.current;
-		if (!map) return;
+		if (!map || !zoom) return;
 		const bounds = L.geoJSON({ type: 'FeatureCollection', features: group.features } as Trails).getBounds();
 		if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
 		const layer = layersRef.current.get(group.representativeId);
@@ -197,7 +210,10 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 			layer.bindTooltip(title, { permanent: true, direction: 'center', className: 'trail-label', interactive: false });
 		}
 		const distanceMi = title === 'Unnamed trail' ? segmentLengthMi(feature) : (trailDistanceByName.get(title) ?? segmentLengthMi(feature));
-		const details = [typeFor(feature).label, formatMiles(distanceMi), surface && `${surface} surface`].filter(Boolean).join(' · ');
+		const elevation = elevations[title];
+		const details = [typeFor(feature).label, formatMiles(distanceMi), elevation && `↑${elevation.gainFt} ft`, surface && `${surface} surface`]
+			.filter(Boolean)
+			.join(' · ');
 		const openNote = alwaysOpen
 			? `<br/><span style="color:${ALWAYS_OPEN_COLOR};font-weight:600">${ALWAYS_OPEN_AREA} · open during park closures</span>`
 			: '';
@@ -207,7 +223,11 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 		if (showAlwaysOpen && alwaysOpen) layer.on('add', () => path.bringToFront());
 		layer.on({
 			mouseover: () => path.setStyle({ weight: 7, opacity: 1 }),
-			mouseout: () => path.setStyle(style(feature))
+			mouseout: () => path.setStyle(style(feature)),
+			click: () => {
+				const group = groups.find((g) => g.name === title);
+				if (group) selectTrail(group, false);
+			}
 		});
 	};
 
@@ -218,7 +238,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 					Trail map
 				</Typography>
 				<Typography color="text.secondary" sx={{ mt: 0.5 }}>
-					Bike-legal trails in Upper Bidwell Park. Tap a trail for its name.
+					Bike-legal trails in Upper Bidwell Park. Tap a trail for its name and elevation profile.
 				</Typography>
 			</Box>
 
@@ -244,7 +264,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 							<ListItemButton key={group.name} selected={selectedName === group.name} onClick={() => selectTrail(group)}>
 								<ListItemText
 										primary={group.name}
-										secondary={`${group.typeLabel} · ${formatMiles(group.distanceMi)}${group.alwaysOpen ? ' · Stays open during park closures' : ''}`}
+										secondary={`${group.typeLabel} · ${formatMiles(group.distanceMi)}${elevations[group.name] ? ` · ↑${elevations[group.name].gainFt} ft` : ''}${group.alwaysOpen ? ' · Stays open during park closures' : ''}`}
 									/>
 							</ListItemButton>
 						))}
@@ -308,13 +328,22 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 					</LayersControl>
 					{trails && (
 						<>
-							{/* remount on toggle so popups, hover handlers and draw order pick up the new style */}
-							<GeoJSON key={String(showAlwaysOpen)} data={trails} style={style} onEachFeature={onEachTrail} />
+							{/* remount on toggle, and once elevations arrive, so popups, hover handlers and draw order pick up the new style */}
+							<GeoJSON key={`${showAlwaysOpen}-${Object.keys(elevations).length > 0}`} data={trails} style={style} onEachFeature={onEachTrail} />
 							<FitToTrails trails={trails} />
 						</>
 					)}
 				</MapContainer>
 			</Paper>
+
+			{selectedGroup && (
+				<ElevationProfile
+					name={selectedGroup.name}
+					distanceMi={selectedGroup.distanceMi}
+					elevation={selectedElevation}
+					onClose={() => setSelectedName(null)}
+				/>
+			)}
 
 			<Stack direction="row" spacing={2.5} sx={{ flexWrap: 'wrap', rowGap: 1, px: 0.5 }}>
 				{[...Object.values(TRAIL_TYPES), { label: `${ALWAYS_OPEN_AREA} (open during closures)`, color: ALWAYS_OPEN_COLOR, dashArray: undefined }].map(
