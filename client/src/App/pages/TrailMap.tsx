@@ -103,8 +103,7 @@ const TrailMap: React.FC = () => {
 		const openNote = alwaysOpen
 			? `<br/><span style="color:${ALWAYS_OPEN_COLOR};font-weight:600">${ALWAYS_OPEN_AREA} · open during park closures</span>`
 			: '';
-		const osmId = `<br/><span style="opacity:.6;font-size:11px">OSM ${escapeHtml(String(feature.id ?? ''))}</span>`;
-		layer.bindPopup(`<strong>${escapeHtml(title)}</strong><br/>${escapeHtml(details)}${openNote}${osmId}`);
+		layer.bindPopup(`<strong>${escapeHtml(title)}</strong><br/>${escapeHtml(details)}${openNote}`);
 
 		const path = layer as L.Path;
 		if (showAlwaysOpen && alwaysOpen) layer.on('add', () => path.bringToFront());

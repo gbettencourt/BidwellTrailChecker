@@ -1,7 +1,7 @@
 /**
  * Local details layered on top of the OpenStreetMap trail data in public/trails.geojson.
  *
- * Keys are OSM way ids ("way/123"), which the map shows in each trail's popup.
+ * Keys are OSM way ids ("way/123") used internally to match trails to local details.
  * - name: shown instead of (or in place of a missing) OSM name
  * - alwaysOpen: stays open when the park closes its trails, highlighted by the map's toggle
  */
