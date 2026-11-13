@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, LayersControl, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, LayersControl, ScaleControl, useMap } from 'react-leaflet';
 import type { Feature, FeatureCollection, Geometry, LineString } from 'geojson';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -265,6 +265,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 				{!trails && !error && <Skeleton variant="rectangular" sx={{ position: 'absolute', inset: 0, height: '100%', zIndex: 1000 }} />}
 				<MapContainer center={[39.79, -121.75]} zoom={13} scrollWheelZoom>
 					<CaptureMap onMap={(map) => { mapRef.current = map; }} />
+					<ScaleControl position="bottomleft" />
 					<LayersControl position="topright">
 						<LayersControl.BaseLayer checked name="Map">
 							<TileLayer
