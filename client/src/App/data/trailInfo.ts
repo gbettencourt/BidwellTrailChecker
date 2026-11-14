@@ -14,7 +14,8 @@ export type TrailInfo = {
 // trails map (https://explore-butte.files.svdcdn.com/production/documents/upper-bidwell-park-trails-map-web.pdf),
 // keyed by the trail name shown on our map. Only trails the map rates are
 // listed — local names the map doesn't cover (Cat Run, Secret Trail,
-// Valentines, NYP, Disc Golf Course Access Road, Strava Town) have none.
+// Valentines, NYP, Disc Golf Course Access Road, Strava Town, Secret Trail
+// Cheater Connector, Hwy 32 frontage trail connector) have none.
 export type TrailDifficulty =
 	| 'Easy'
 	| 'Easy to Moderate'
@@ -40,12 +41,17 @@ export const TRAIL_DIFFICULTY: Record<string, TrailDifficulty> = {
 };
 
 export const TRAIL_INFO: Record<string, TrailInfo> = {
-	// unnamed trails south of the park, between the park boundary and CA 32, that stay open during closures
+	// unnamed trails south of the park, between the park boundary and CA 32, that stay open during closures.
+	// names marked "Trailforks" below come from Trailforks' Upper Bidwell
+	// Park trail pages (trailforks.com), matched by trailhead location,
+	// length and elevation — not from OSM, which leaves these ways unnamed.
+	// the Trailforks "Hwy 32 frontage trail connector" is 1.9 mi long; our
+	// data holds only 0.73 mi of it, in five segments.
 	'way/421269240': { alwaysOpen: true },
 	'way/421270613': { alwaysOpen: true },
 	'way/421270614': { name: 'Cat Run', alwaysOpen: true },
 	'way/421271415': { name: 'Secret Trail', alwaysOpen: true },
-	'way/421271416': { alwaysOpen: true },
+	'way/421271416': { name: 'Secret Trail Cheater Connector', alwaysOpen: true },
 	'way/421272154': { name: 'Valentines', alwaysOpen: true },
 	'way/421272155': { alwaysOpen: true },
 	'way/421272156': { alwaysOpen: true },
@@ -53,12 +59,12 @@ export const TRAIL_INFO: Record<string, TrailInfo> = {
 	'way/421272504': { alwaysOpen: true },
 	'way/984073786': { name: 'NYP', alwaysOpen: true },
 	'way/984073787': { alwaysOpen: true },
-	'way/1164073446': { alwaysOpen: true },
-	'way/1164073447': { alwaysOpen: true },
+	'way/1164073446': { name: 'Hwy 32 frontage trail connector', alwaysOpen: true },
+	'way/1164073447': { name: 'Hwy 32 frontage trail connector', alwaysOpen: true },
 	'way/1164073448': { alwaysOpen: true },
-	'way/1457058906': { alwaysOpen: true },
-	'way/1457058907': { alwaysOpen: true },
-	'way/1457058908': { alwaysOpen: true },
+	'way/1457058906': { name: 'Hwy 32 frontage trail connector', alwaysOpen: true },
+	'way/1457058907': { name: 'Hwy 32 frontage trail connector', alwaysOpen: true },
+	'way/1457058908': { name: 'Hwy 32 frontage trail connector', alwaysOpen: true },
 	'way/1457059686': { alwaysOpen: true },
 	'way/1457059687': { alwaysOpen: true }
 };
