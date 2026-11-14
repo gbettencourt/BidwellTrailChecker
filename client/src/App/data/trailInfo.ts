@@ -15,7 +15,8 @@ export type TrailInfo = {
 // keyed by the trail name shown on our map. Only trails the map rates are
 // listed — local names the map doesn't cover (Cat Run, Secret Trail,
 // Valentines, NYP, Disc Golf Course Access Road, Strava Town, Secret Trail
-// Cheater Connector, Hwy 32 frontage trail connector) have none.
+// Cheater Connector, Hwy 32 frontage trail connector, Hacksaw, JDP,
+// Lower Secret Connector) have none.
 export type TrailDifficulty =
 	| 'Easy'
 	| 'Easy to Moderate'
@@ -46,8 +47,12 @@ export const TRAIL_INFO: Record<string, TrailInfo> = {
 	// Park trail pages (trailforks.com), matched by trailhead location,
 	// length and elevation — not from OSM, which leaves these ways unnamed.
 	// the Trailforks "Hwy 32 frontage trail connector" is 1.9 mi long; our
-	// data holds only 0.73 mi of it, in five segments.
-	'way/421269240': { alwaysOpen: true },
+	// data holds only 0.73 mi of it, in five segments. Hacksaw, JDP and
+	// Lower Secret Connector are lower-confidence Trailforks matches
+	// (trailheads 0.37-0.7 mi from the way ends, lengths >10% off) that
+	// Gary confirmed on 2026-11-14; JDP is marked decommissioned on
+	// Trailforks but is still the local name for that way.
+	'way/421269240': { name: 'Lower Secret Connector', alwaysOpen: true },
 	'way/421270613': { alwaysOpen: true },
 	'way/421270614': { name: 'Cat Run', alwaysOpen: true },
 	'way/421271415': { name: 'Secret Trail', alwaysOpen: true },
@@ -56,9 +61,9 @@ export const TRAIL_INFO: Record<string, TrailInfo> = {
 	'way/421272155': { alwaysOpen: true },
 	'way/421272156': { alwaysOpen: true },
 	'way/421272157': { name: 'Disc Golf Course Access Road', alwaysOpen: true },
-	'way/421272504': { alwaysOpen: true },
+	'way/421272504': { name: 'Hacksaw', alwaysOpen: true },
 	'way/984073786': { name: 'NYP', alwaysOpen: true },
-	'way/984073787': { alwaysOpen: true },
+	'way/984073787': { name: 'JDP', alwaysOpen: true },
 	'way/1164073446': { name: 'Hwy 32 frontage trail connector', alwaysOpen: true },
 	'way/1164073447': { name: 'Hwy 32 frontage trail connector', alwaysOpen: true },
 	'way/1164073448': { alwaysOpen: true },
