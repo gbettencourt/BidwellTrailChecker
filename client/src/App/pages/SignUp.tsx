@@ -133,6 +133,13 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 						<Typography color="text.secondary">
 							We'll let you know as soon as the trail status changes. Check your inbox for a confirmation email.
 						</Typography>
+						{initialData?.notificationFromEmail && (
+							<Typography color="text.secondary">
+								Our emails come from{' '}
+								<Link href={`mailto:${initialData.notificationFromEmail}`}>{initialData.notificationFromEmail}</Link> — if the
+								confirmation lands in spam, add that address to your contacts so you don't miss trail alerts.
+							</Typography>
+						)}
 					</Stack>
 				) : (
 					<>

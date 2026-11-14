@@ -57,7 +57,8 @@ app.get('/', async (_req, res) => {
 		statusSince: history.current,
 		captchaCode: randomInt(1000, 9999),
 		renderedAt: Date.now(),
-		siteUrl: seoSiteUrl
+		siteUrl: seoSiteUrl,
+		notificationFromEmail: process.env.SMTP_FROM_EMAIL || undefined
 	};
 	const renderedApp = await renderApp('/', initialData);
 	res.type('html').send(renderPage(html, { ...renderedApp, initialData }));
