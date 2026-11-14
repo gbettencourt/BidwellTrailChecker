@@ -10,13 +10,11 @@ export type TrailInfo = {
 	alwaysOpen?: boolean;
 };
 
-// difficulty ratings from the City of Chico's "Explore Upper Bidwell Park"
-// trails map (https://explore-butte.files.svdcdn.com/production/documents/upper-bidwell-park-trails-map-web.pdf),
-// keyed by the trail name shown on our map. Only trails the map rates are
-// listed — local names the map doesn't cover (Cat Run, Secret Trail,
-// Valentines, NYP, Disc Golf Course Access Road, Strava Town, Secret Trail
-// Cheater Connector, Hwy 32 frontage trail connector, Hacksaw, JDP,
-// Lower Secret Connector) have none.
+// difficulty ratings keyed by the trail name shown on our map. The first
+// twelve come from the City of Chico's "Explore Upper Bidwell Park" trails
+// map (https://explore-butte.files.svdcdn.com/production/documents/upper-bidwell-park-trails-map-web.pdf);
+// the rest are Gary's own ratings (2026-11-14) for the local names the
+// City map doesn't cover.
 export type TrailDifficulty =
 	| 'Easy'
 	| 'Easy to Moderate'
@@ -38,7 +36,19 @@ export const TRAIL_DIFFICULTY: Record<string, TrailDifficulty> = {
 	'South Rim Trail': 'Moderate to Difficult',
 	// the map calls it Ten Mile House Road; same route as our Ten Mile House Trail
 	'Ten Mile House Trail': 'Moderate',
-	'Upper Trail': 'Moderate'
+	'Upper Trail': 'Moderate',
+	// Gary's ratings for the local names (2026-11-14)
+	'Cat Run': 'Moderate',
+	'Disc Golf Course Access Road': 'Easy',
+	Hacksaw: 'Moderate',
+	'Hwy 32 frontage trail connector': 'Easy',
+	JDP: 'Easy',
+	'Lower Secret Connector': 'Moderate',
+	NYP: 'Easy',
+	'Secret Trail': 'Moderate to Difficult',
+	'Secret Trail Cheater Connector': 'Moderate',
+	'Strava Town trail': 'Moderate',
+	Valentines: 'Difficult'
 };
 
 export const TRAIL_INFO: Record<string, TrailInfo> = {
