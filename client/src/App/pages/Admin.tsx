@@ -2,11 +2,18 @@ import { Alert, Box, Button, Divider, Paper, Stack, TextField, ToggleButton, Tog
 import AutoModeRounded from '@mui/icons-material/AutoModeRounded';
 import LockOpenRounded from '@mui/icons-material/LockOpenRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 type OverrideValue = 'open' | 'closed' | 'auto';
 type TestEmailStatus = 'open' | 'closed';
 type TestChannel = 'email' | 'sms';
+
+type LogEntry = {
+	id: number;
+	ts: string;
+	level: 'info' | 'warn' | 'error';
+	message: string;
+};
 
 type TestNotificationState = {
 	sending: TestChannel | null;
@@ -85,6 +92,11 @@ function AdminControls() {
 	const [saved, setSaved] = useState(false);
 	const [testEmailStatus, setTestEmailStatus] = useState<TestEmailStatus>('open');
 	const [testNotification, setTestNotification] = useState<TestNotificationState>({ sending: null, result: null });
+	const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+	const [logPaused, setLogPaused] = useState(false);
+	const [following, setFollowing] = useState(true);
+	const logCursorRef = useRef(0);
+	const logContainerRef = useRef<HTMLDivElement>(null);
 
 	const fetchStatus = async () => {
 		const res = await fetch('/api/admin/status', {
@@ -108,6 +120,54 @@ function AdminControls() {
 	useEffect(() => {
 		fetchStatus();
 	}, []);
+
+	const fetchLogs = async () => {
+		const res = await fetch(`/api/admin/logs?since=${logCursorRef.current}`, {
+			headers: {
+				Authorization: `Bearer ${localStorage.getItem('admin_token')}`
+			}
+		});
+
+		if (res.status === 401) {
+			localStorage.removeItem('admin_token');
+			window.location.reload();
+			return;
+		}
+
+		if (!res.ok) return;
+
+		const data = await res.json();
+		if (data.entries.length > 0) {
+			setLogEntries((prev) => [...prev.slice(-999), ...data.entries]);
+			logCursorRef.current = data.latestId;
+		}
+	};
+
+	useEffect(() => {
+		fetchLogs();
+		if (logPaused) return;
+		const id = setInterval(fetchLogs, 2000);
+		return () => clearInterval(id);
+	}, [logPaused]);
+
+	useEffect(() => {
+		if (following && logContainerRef.current) {
+			logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+		}
+	}, [logEntries, following]);
+
+	const onLogScroll = () => {
+		const el = logContainerRef.current;
+		if (!el) return;
+		if (el.scrollTop + el.clientHeight < el.scrollHeight - 40) setFollowing(false);
+	};
+
+	const jumpToLatest = () => {
+		setFollowing(true);
+		if (logContainerRef.current) {
+			logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+		}
+	};
 
 	const saveOverride = async () => {
 		setSaving(true);
@@ -273,6 +333,59 @@ function AdminControls() {
 					<Button variant="outlined" size="large" onClick={() => sendTestNotification('sms')} disabled={testNotification.sending !== null}>
 						{testNotification.sending === 'sms' ? 'Sending…' : 'Send test SMS'}
 					</Button>
+				</Stack>
+
+				<Divider />
+
+				<Stack spacing={2}>
+					<Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+						<Box>
+							<Typography variant="h6" component="h2">
+								Server logs
+							</Typography>
+							<Typography color="text.secondary" sx={{ mt: 0.5 }}>
+								Live tail of app events — status checks, notifications, signups. {logPaused ? 'Paused.' : 'Updates every 2 seconds.'}
+							</Typography>
+						</Box>
+						<Button variant="outlined" size="small" onClick={() => setLogPaused(!logPaused)} sx={{ flexShrink: 0 }}>
+							{logPaused ? 'Resume' : 'Pause'}
+						</Button>
+					</Box>
+					<Box
+						ref={logContainerRef}
+						onScroll={onLogScroll}
+						sx={{
+							maxHeight: 400,
+							overflowY: 'auto',
+							bgcolor: 'grey.900',
+							color: 'grey.100',
+							borderRadius: 1,
+							p: 1.5,
+							fontFamily: 'monospace',
+							fontSize: '0.8rem',
+							lineHeight: 1.6,
+							whiteSpace: 'pre-wrap',
+							wordBreak: 'break-word'
+						}}>
+						{logEntries.length === 0 ? (
+							<Typography sx={{ color: 'grey.500', fontFamily: 'inherit', fontSize: 'inherit' }}>
+								No log entries yet — entries appear as the server logs events.
+							</Typography>
+						) : (
+							logEntries.map((entry) => (
+								<Box
+									key={entry.id}
+									sx={{ color: entry.level === 'error' ? 'error.light' : entry.level === 'warn' ? 'warning.light' : 'inherit' }}>
+									{new Date(entry.ts).toLocaleTimeString()} {entry.message}
+								</Box>
+							))
+						)}
+					</Box>
+					{!following && (
+						<Button variant="outlined" size="small" onClick={jumpToLatest} sx={{ alignSelf: 'flex-start' }}>
+							Jump to latest
+						</Button>
+					)}
 				</Stack>
 			</Stack>
 		</Paper>

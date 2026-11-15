@@ -10,6 +10,7 @@ import DbUtil from './db.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import adminRouter from './admin-router.js';
+import { logError, logInfo, logWarn } from './logger.js';
 import { statusHistory } from './history.js';
 import { renderPage } from './seo.js';
 import { renderApp, renderPageContent, renderPageMetadata } from './ssr-renderer.js';
@@ -145,7 +146,7 @@ app.post(
 		}
 
 		if (!process.env.SMTP_ADMIN_EMAIL) {
-			console.error('Cannot send trail report: SMTP_ADMIN_EMAIL is not configured');
+			logError('Cannot send trail report: SMTP_ADMIN_EMAIL is not configured');
 			return res.status(500).json({ success: false, error: 'Trail reports are temporarily unavailable.' });
 		}
 
@@ -160,7 +161,7 @@ app.post(
 			});
 			return res.json({ success: true });
 		} catch (error) {
-			console.error('Failed to send trail report', error);
+			logError('Failed to send trail report', error);
 			return res.status(500).json({ success: false, error: 'Unable to send your report right now. Please try again later.' });
 		}
 	}
@@ -185,15 +186,15 @@ app.post(
 		}
 		const email = req.body.email;
 		const phone = req.body.phone;
-		console.log('register new email=' + email);
-		console.log('register new phone=' + phone);
+		logInfo('register new email=' + email);
+		logInfo('register new phone=' + phone);
 
 		const users = await dbUtil.fetchUsers();
 		const existingUser = users.find((user) => user.email === email);
 
 		let user = existingUser;
 		if (existingUser) {
-			console.log(`updating existing user, email=${email}, phone=${phone}`);
+			logInfo(`updating existing user, email=${email}, phone=${phone}`);
 			existingUser.phone = phone;
 			await dbUtil.save();
 		} else {
@@ -211,7 +212,7 @@ app.post(
 );
 
 app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
-	console.log(req.body);
+	logInfo(req.body);
 
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
@@ -222,7 +223,7 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
 		return;
 	}
 	const email = req.body.email;
-	console.log('removing email=' + email);
+	logInfo('removing email=' + email);
 	checker.sendUserUnsubNotification(email);
 
 	await dbUtil.removeUser(email);
@@ -237,7 +238,7 @@ async function unsubscribeFromLink(id: unknown, token: unknown) {
 	if (!user) return true;
 	if (!verifyUnsubscribeToken(user, String(token))) return false;
 
-	console.log(`unsubscribing via email link, email=${user.email}`);
+	logInfo(`unsubscribing via email link, email=${user.email}`);
 	checker.sendUserUnsubNotification(user.email);
 	await dbUtil.removeUser(user.email);
 	return true;
@@ -262,11 +263,11 @@ app.get(/.*/, (req, res) => {
 });
 
 if (!process.env.APP_URL) {
-	console.warn('APP_URL is not set, so links in emails (including unsubscribe links) will be broken');
+	logWarn('APP_URL is not set, so links in emails (including unsubscribe links) will be broken');
 }
 
 //start server
 const port = process.env.PORT || 5000;
 app.listen(port);
 
-console.log('App is listening on port ' + port);
+logInfo('App is listening on port ' + port);
