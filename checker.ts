@@ -261,7 +261,8 @@ export default class Checker {
 	// never rejects, so callers can fire and forget without an unhandled rejection crashing the process
 	async sendMail(mail: { to: string; subject: string; text: string; html?: string; headers?: Record<string, string> }) {
 		try {
-			await this.getTransporter().sendMail({ from: process.env.SMTP_FROM_EMAIL, ...mail });
+			const info = await this.getTransporter().sendMail({ from: process.env.SMTP_FROM_EMAIL, ...mail });
+			logInfo(`Message sent: ${info.messageId} to ${mail.to} ("${mail.subject}")`);
 		} catch (e) {
 			logError(`error sending email "${mail.subject}" to ${mail.to}`, e);
 		}

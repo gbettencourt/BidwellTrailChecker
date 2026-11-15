@@ -63,9 +63,11 @@ router.post('/login', (req, res) => {
 	const { password } = req.body;
 
 	if (password !== ADMIN_PASSWORD) {
+		logError(`Admin login failed from ${req.ip}`);
 		return res.status(401).json({ error: 'Invalid password' });
 	}
 
+	logInfo(`Admin login succeeded from ${req.ip}`);
 	const token = createToken();
 	res.json({ token });
 });
@@ -116,7 +118,8 @@ router.post('/test-email', async (req, res) => {
 			return res.status(result.status).json({ error: result.error });
 		}
 
-		await checker.sendStatusEmail(status === 'open' ? 'Open' : 'Closed', result.admin);
+		const info = await checker.sendStatusEmail(status === 'open' ? 'Open' : 'Closed', result.admin);
+		logInfo(`Admin test email sent: ${info.messageId}`);
 		res.json({ ok: true });
 	} catch (error) {
 		logError('Failed to send admin test email', error);
@@ -146,10 +149,11 @@ router.post('/test-sms', async (_req, res) => {
 			return res.status(500).json({ error: 'The admin account has an invalid phone number' });
 		}
 
-		await checker.sendSms(
+		const message = await checker.sendSms(
 			result.admin.phone,
 			`Bidwell Trail Checker test SMS. SMS sending is working.\n\nView trail status & map: ${process.env.APP_URL}`
 		);
+		logInfo(`Admin test SMS sent: ${message.sid}`);
 		res.json({ ok: true });
 	} catch (error) {
 		logError('Failed to send admin test SMS', error);

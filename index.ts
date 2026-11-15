@@ -159,6 +159,7 @@ app.post(
 				observedAt: req.body.observedAt || undefined,
 				email: req.body.email || undefined
 			});
+			logInfo(`Trail report received: ${req.body.type} at ${req.body.location.trim()}`);
 			return res.json({ success: true });
 		} catch (error) {
 			logError('Failed to send trail report', error);
@@ -236,7 +237,10 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
 async function unsubscribeFromLink(id: unknown, token: unknown) {
 	const user = await dbUtil.fetchUser(Number(id));
 	if (!user) return true;
-	if (!verifyUnsubscribeToken(user, String(token))) return false;
+	if (!verifyUnsubscribeToken(user, String(token))) {
+		logWarn(`Invalid unsubscribe link for user id=${id}`);
+		return false;
+	}
 
 	logInfo(`unsubscribing via email link, email=${user.email}`);
 	checker.sendUserUnsubNotification(user.email);
@@ -260,6 +264,18 @@ app.use('/api/admin', adminRouter(checker));
 // Handles any requests that don't match the ones above
 app.get(/.*/, (req, res) => {
 	res.sendFile(join(__dirname + '/client/build/index.html'));
+});
+
+// Unexpected errors in any route land in the admin tail, not just stderr.
+// API routes get a JSON 500; page routes fall through to Express's default
+// error page after logging.
+app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+	logError('Unhandled error', err);
+	if (req.path.startsWith('/api/')) {
+		res.status(500).json({ error: 'Internal server error' });
+		return;
+	}
+	next(err);
 });
 
 if (!process.env.APP_URL) {
