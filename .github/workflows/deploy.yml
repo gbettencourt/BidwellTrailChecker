@@ -1,0 +1,77 @@
+name: Deploy App
+
+'on':
+    workflow_dispatch:
+
+jobs:
+    deploy:
+        runs-on: [self-hosted, linux, ARM64]
+
+        env:
+            DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+            SERVICE_NAME: trailchecker
+
+        steps:
+            - name: Verify this run is on master
+              run: |
+                  if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+                    echo "Refusing to deploy from $GITHUB_REF — deploys only run on master" >&2
+                    exit 1
+                  fi
+
+            - name: Check out
+              uses: actions/checkout@v7
+
+            - name: Set up Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+                  cache-dependency-path: |
+                      package-lock.json
+                      client/package-lock.json
+
+            - name: Install dependencies
+              run: |
+                  npm ci
+                  npm --prefix client ci
+
+            - name: Run server tests (deploy gate)
+              run: npm test
+
+            - name: Build client, then server
+              run: |
+                  npm --prefix client run build
+                  npm run build
+
+            - name: Check the deploy target is configured
+              run: |
+                  if [ -z "$DEPLOY_DIR" ]; then
+                    echo "DEPLOY_DIR secret is not set — add it under repo Settings > Secrets and variables > Actions" >&2
+                    exit 1
+                  fi
+
+            - name: Sync built tree to the service directory
+              run: |
+                  rsync -a --delete \
+                    --exclude '/.env' \
+                    --exclude '/db.json' \
+                    --exclude '/history.json' \
+                    --exclude '/.git' \
+                    --exclude 'client/node_modules' \
+                    ./ "$DEPLOY_DIR/"
+
+            - name: Restart the app service
+              run: sudo systemctl restart "$SERVICE_NAME"
+
+            - name: Health-check the live site
+              run: |
+                  for i in 1 2 3 4 5 6; do
+                    if curl -sf https://www.chicomtb.com/api/trailstatus > /dev/null; then
+                      echo "healthy"
+                      exit 0
+                    fi
+                    sleep 5
+                  done
+                  echo "health check failed after restart" >&2
+                  exit 1
