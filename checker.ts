@@ -8,6 +8,7 @@ import { recordStatus, TrailStatus } from './history.js';
 import { parseTrailStatus } from './status-parser.js';
 import { statusChangeEmail, welcomeEmail } from './email-templates.js';
 import { oneClickUnsubscribeUrl } from './unsubscribe.js';
+import { logError, logInfo } from './logger.js';
 
 // lets Gmail and Yahoo show their own unsubscribe button, which unsubscribes in one click (RFC 8058)
 const unsubscribeHeaders = (user: User) => ({
@@ -51,10 +52,10 @@ export default class Checker {
 	}
 
 	public async fetchStatus() {
-		console.log('fetching status HTML page');
+		logInfo('fetching status HTML page');
 
 		if (this.config.checking || readOverride() !== 'auto') {
-			console.log('checking in process or override active, skipping');
+			logInfo('checking in process or override active, skipping');
 			return;
 		}
 
@@ -67,7 +68,7 @@ export default class Checker {
 			}
 			const body = await response.text();
 
-			console.log('fetch complete, parsing...');
+			logInfo('fetch complete, parsing...');
 
 			const result = parseTrailStatus(body);
 			if ('error' in result) {
@@ -77,10 +78,10 @@ export default class Checker {
 			}
 
 			const trailStatus = result.status;
-			console.log(`processing complete, trail status: ${trailStatus}`);
+			logInfo(`processing complete, trail status: ${trailStatus}`);
 			this.checkRecovered();
 
-			await recordStatus(trailStatus, 'auto').catch((e) => console.log('error recording status history', e));
+			await recordStatus(trailStatus, 'auto').catch((e) => logError('error recording status history', e));
 
 			if (trailStatus != this.config.lastStatus && this.config.lastStatus != 'NULL') {
 				await this.sendNotifications(trailStatus);
@@ -97,7 +98,7 @@ export default class Checker {
 
 	// email the admin once when checks start failing, not on every 15 minute retry
 	reportCheckFailure(reason: string) {
-		console.log(`status check failed: ${reason}`);
+		logError(`status check failed: ${reason}`);
 		if (this.config.checkFailing) return;
 
 		this.config.checkFailing = true;
@@ -112,7 +113,7 @@ export default class Checker {
 		if (!this.config.checkFailing) return;
 
 		this.config.checkFailing = false;
-		console.log('status check recovered');
+		logInfo('status check recovered');
 		this.sendMail({
 			to: process.env.SMTP_ADMIN_EMAIL,
 			subject: 'Trail Checker: status check recovered',
@@ -123,7 +124,7 @@ export default class Checker {
 	public manualOverride(value: 'open' | 'closed') {
 		this.config.lastStatus = value === 'open' ? 'Open' : 'Closed';
 		this.config.lastCheck = new Date();
-		recordStatus(this.config.lastStatus as TrailStatus, 'manual').catch((e) => console.log('error recording status history', e));
+		recordStatus(this.config.lastStatus as TrailStatus, 'manual').catch((e) => logError('error recording status history', e));
 		this.sendNotifications(this.config.lastStatus);
 	}
 
@@ -131,7 +132,7 @@ export default class Checker {
 		const dbUtil = new DbUtil();
 		const users = await dbUtil.fetchUsers();
 
-		console.log('sending notifications');
+		logInfo('sending notifications');
 
 		const smsText = `Bidwell Trail Status Update. Trail status changed to: ${trailStatus}\n\nView trail status & map: ${process.env.APP_URL}`;
 
@@ -139,27 +140,27 @@ export default class Checker {
 			const transporter = this.getTransporter(true);
 
 			for (const user of users) {
-				console.log(`sending notification to: ${user.email}`);
+				logInfo(`sending notification to: ${user.email}`);
 
 				if (user.skipMail) {
-					console.log('skipMail=true');
+					logInfo('skipMail=true');
 				} else {
 					try {
 						const info = await this.sendStatusEmail(trailStatus, user, transporter);
-						console.log(`Message sent: ${info.messageId}`);
+						logInfo(`Message sent: ${info.messageId}`);
 					} catch (e) {
-						console.log(e);
+						logError(e);
 					}
 				}
 
 				if (user.phone) {
-					console.log(`${user.email} has phone ${user.phone}, sending sms`);
+					logInfo(`${user.email} has phone ${user.phone}, sending sms`);
 
 					try {
 						const message = await this.sendSms(user.phone, smsText);
-						console.log(message.sid);
+						logInfo(message.sid);
 					} catch (e) {
-						console.log(e);
+						logError(e);
 					}
 				}
 
@@ -167,7 +168,7 @@ export default class Checker {
 				// await this.pause();
 			}
 		} catch (e) {
-			console.log('error sending emails', e);
+			logError('error sending emails', e);
 		}
 	}
 
@@ -260,9 +261,10 @@ export default class Checker {
 	// never rejects, so callers can fire and forget without an unhandled rejection crashing the process
 	async sendMail(mail: { to: string; subject: string; text: string; html?: string; headers?: Record<string, string> }) {
 		try {
-			await this.getTransporter().sendMail({ from: process.env.SMTP_FROM_EMAIL, ...mail });
+			const info = await this.getTransporter().sendMail({ from: process.env.SMTP_FROM_EMAIL, ...mail });
+			logInfo(`Message sent: ${info.messageId} to ${mail.to} ("${mail.subject}")`);
 		} catch (e) {
-			console.log(`error sending email "${mail.subject}" to ${mail.to}`, e);
+			logError(`error sending email "${mail.subject}" to ${mail.to}`, e);
 		}
 	}
 

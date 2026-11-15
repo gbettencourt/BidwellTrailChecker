@@ -1,5 +1,6 @@
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
+import { logInfo } from './logger.js';
 
 export type TrailStatus = 'Open' | 'Closed';
 
@@ -27,7 +28,7 @@ export async function recordStatus(status: TrailStatus, source: StatusEvent['sou
 
 	db.data.events.push({ status, at: new Date().toISOString(), source });
 	await db.write();
-	console.log(`recorded status change to ${status} (${source})`);
+	logInfo(`recorded status change to ${status} (${source})`);
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
