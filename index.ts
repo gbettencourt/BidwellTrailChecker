@@ -113,6 +113,22 @@ app.get('/report', async (_req, res) => {
 	);
 });
 
+app.get('/about', async (_req, res) => {
+	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+	const page = {
+		title: 'About | Bidwell Trail Checker',
+		description:
+			'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.',
+		heading: 'About Bidwell Trail Checker'
+	};
+	res.type('html').send(
+		renderPage(html, {
+			metadata: await renderPageMetadata('/about', 'Unknown', undefined, seoSiteUrl),
+			markup: await renderPageContent(page.heading, page.description)
+		})
+	);
+});
+
 // Serve the static files from the React app
 app.use(express.static(join(__dirname, '/client/build')));
 

@@ -49,6 +49,16 @@ describe('getPageMetadata', () => {
 		);
 	});
 
+	it('gives the about page its own title, description and canonical', () => {
+		const meta = getPageMetadata('/about', { status: 'Unknown', siteUrl: SITE_URL });
+		expect(meta.title).toBe('About | Bidwell Trail Checker');
+		expect(meta.description).toBe(
+			'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.'
+		);
+		expect(meta.canonical).toBe('https://www.chicomtb.com/about');
+		expect(meta.noIndex).toBeUndefined();
+	});
+
 	it('marks unsubscribe and admin as noindex', () => {
 		expect(getPageMetadata('/unsubscribe', { status: 'Unknown', siteUrl: SITE_URL }).noIndex).toBe(true);
 		expect(getPageMetadata('/admin', { status: 'Unknown', siteUrl: SITE_URL }).noIndex).toBe(true);
