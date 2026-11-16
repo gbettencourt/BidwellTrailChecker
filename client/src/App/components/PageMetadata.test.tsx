@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getPageMetadata } from './PageMetadata';
+import { render } from '@testing-library/react';
+import { getPageMetadata, PageMetadata } from './PageMetadata';
 
 const SITE_URL = 'https://www.chicomtb.com';
 
@@ -71,5 +72,39 @@ describe('getPageMetadata', () => {
 		expect(meta.canonical).toBe('https://www.chicomtb.com/history');
 		const apex = getPageMetadata('/history', { status: 'Unknown', siteUrl: 'https://chicomtb.com' });
 		expect(apex.canonical).toBe('https://chicomtb.com/history');
+	});
+
+	it('points the share image at og-image.jpg on the given site URL', () => {
+		expect(getPageMetadata('/', { status: 'Open', siteUrl: SITE_URL }).image).toBe('https://www.chicomtb.com/og-image.jpg');
+		expect(getPageMetadata('/map', { status: 'Unknown', siteUrl: SITE_URL }).image).toBe('https://www.chicomtb.com/og-image.jpg');
+	});
+});
+
+describe('PageMetadata', () => {
+	const meta = (pathname: string) => document.querySelector(`meta[property="${pathname}"]`)?.getAttribute('content');
+	const twitter = (name: string) => document.querySelector(`meta[name="twitter:${name}"]`)?.getAttribute('content');
+
+	it('renders Open Graph and Twitter Card tags for the page', () => {
+		render(<PageMetadata {...getPageMetadata('/', { status: 'Open', lastCheck: '2026-11-15T16:00:00.000Z', siteUrl: SITE_URL })} />);
+		expect(meta('og:title')).toBe('Upper Bidwell Park trails: Open | Bidwell Trail Checker');
+		expect(meta('og:description')).toContain('currently Open');
+		expect(meta('og:type')).toBe('website');
+		expect(meta('og:url')).toBe('https://www.chicomtb.com/');
+		expect(meta('og:site_name')).toBe('Bidwell Trail Checker');
+		expect(meta('og:image')).toBe('https://www.chicomtb.com/og-image.jpg');
+		expect(meta('og:image:width')).toBe('1200');
+		expect(meta('og:image:height')).toBe('630');
+		expect(meta('og:image:alt')).toContain('Bidwell Trail Checker');
+		expect(twitter('card')).toBe('summary_large_image');
+		expect(twitter('title')).toBe('Upper Bidwell Park trails: Open | Bidwell Trail Checker');
+		expect(twitter('description')).toContain('currently Open');
+		expect(twitter('image')).toBe('https://www.chicomtb.com/og-image.jpg');
+	});
+
+	it('renders the same share image for other pages', () => {
+		render(<PageMetadata {...getPageMetadata('/map', { status: 'Unknown', siteUrl: SITE_URL })} />);
+		expect(meta('og:url')).toBe('https://www.chicomtb.com/map');
+		expect(meta('og:image')).toBe('https://www.chicomtb.com/og-image.jpg');
+		expect(twitter('image')).toBe('https://www.chicomtb.com/og-image.jpg');
 	});
 });
