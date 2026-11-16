@@ -61,7 +61,7 @@ jobs:
               run: |
                   for f in db.json history.json trailOverride.json; do
                     if [ -f "$f" ]; then
-                      node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$f"
+                      python3 -m json.tool "$f" > /dev/null
                     fi
                   done
 
