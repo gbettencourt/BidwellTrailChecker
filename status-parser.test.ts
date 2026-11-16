@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from 'vitest';
 import { parseTrailStatus } from './status-parser.js';
 
 // trimmed-down copy of the status table on the city's Trail, Gate, & Facility Status page
@@ -18,27 +17,27 @@ const page = (north: string, south: string) => `
 </div>`;
 
 test('open when both trail rows are open', () => {
-	assert.deepEqual(parseTrailStatus(page('OPEN', 'OPEN')), { status: 'Open' });
+	expect(parseTrailStatus(page('OPEN', 'OPEN'))).toEqual({ status: 'Open' });
 });
 
 test('closed when both trail rows are closed, even though other facilities are open', () => {
-	assert.deepEqual(parseTrailStatus(page('CLOSED', 'CLOSED')), { status: 'Closed' });
+	expect(parseTrailStatus(page('CLOSED', 'CLOSED'))).toEqual({ status: 'Closed' });
 });
 
 test('closed when only one side is closed', () => {
-	assert.deepEqual(parseTrailStatus(page('OPEN', 'CLOSED')), { status: 'Closed' });
+	expect(parseTrailStatus(page('OPEN', 'CLOSED'))).toEqual({ status: 'Closed' });
 });
 
 test('ignores case and footnote markers', () => {
-	assert.deepEqual(parseTrailStatus(page('Open*', ' open ')), { status: 'Open' });
+	expect(parseTrailStatus(page('Open*', ' open '))).toEqual({ status: 'Open' });
 });
 
 test('error on unexpected wording instead of guessing', () => {
 	const result = parseTrailStatus(page('OPEN TO PEDESTRIANS ONLY', 'OPEN'));
-	assert.ok('error' in result && result.error.includes('PEDESTRIANS'));
+	expect('error' in result && result.error.includes('PEDESTRIANS')).toBeTruthy();
 });
 
 test('error when the trail rows are missing', () => {
 	const result = parseTrailStatus('<table><tr><td>Caper Acres</td><td>OPEN</td></tr></table>');
-	assert.ok('error' in result && result.error.includes('no "Upper Park Trails" rows'));
+	expect('error' in result && result.error.includes('no "Upper Park Trails" rows')).toBeTruthy();
 });

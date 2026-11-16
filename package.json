@@ -10,7 +10,7 @@
 		"build": "npm run clean && tsc && rsync -a client dist --exclude node_modules",
 		"check": "node dist/checker.js",
 		"check-types": "tsc --noEmit",
-		"test": "tsc && node --test dist/*.test.js && npm --prefix client test"
+		"test": "npm run check-types && vitest run && npm --prefix client test"
 	},
 	"keywords": [],
 	"author": "Gary Bettencourt",
@@ -30,7 +30,8 @@
 	},
 	"devDependencies": {
 		"@types/node": "^24.7.1",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^5.1.0"
 	},
 	"prettier": {
 		"printWidth": 140,

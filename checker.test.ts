@@ -1,5 +1,4 @@
-import { after, before, beforeEach, test } from 'node:test';
-import assert from 'node:assert/strict';
+import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -53,7 +52,7 @@ function readHistory() {
 	return JSON.parse(fs.readFileSync(path.join(tmp, 'history.json'), 'utf-8'));
 }
 
-before(async () => {
+beforeAll(async () => {
 	originalCwd = process.cwd();
 	tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'btc-checker-'));
 	process.chdir(tmp);
@@ -90,7 +89,7 @@ before(async () => {
 	({ default: CheckerClass } = await import('./checker.js'));
 });
 
-after(() => {
+afterAll(() => {
 	globalThis.fetch = originalFetch;
 	console.log = originalConsole.log;
 	console.warn = originalConsole.warn;
@@ -113,14 +112,14 @@ test('first check records the status but notifies nobody', async () => {
 	const checker = stubbedChecker();
 	await checker.fetchStatus();
 
-	assert.equal(checker.config.lastStatus, 'Open');
-	assert.deepEqual(sent, []);
-	assert.equal(fetchCalls.length, 1);
-	assert.equal(fetchCalls[0], 'https://city.example/status');
+	expect(checker.config.lastStatus).toBe('Open');
+	expect(sent).toEqual([]);
+	expect(fetchCalls.length).toBe(1);
+	expect(fetchCalls[0]).toBe('https://city.example/status');
 	const history = readHistory();
-	assert.equal(history.events.length, 1);
-	assert.equal(history.events[0].status, 'Open');
-	assert.equal(history.events[0].source, 'auto');
+	expect(history.events.length).toBe(1);
+	expect(history.events[0].status).toBe('Open');
+	expect(history.events[0].source).toBe('auto');
 });
 
 test('status flip emails subscribers, skipping skipMail users', async () => {
@@ -129,14 +128,14 @@ test('status flip emails subscribers, skipping skipMail users', async () => {
 	fetchBehavior = async () => ({ ok: true, status: 200, text: async () => page('CLOSED', 'CLOSED') });
 	await checker.fetchStatus();
 
-	assert.equal(checker.config.lastStatus, 'Closed');
-	assert.equal(sent.length, 1);
-	assert.equal(sent[0].to, 'a@example.com');
-	assert.equal(sent[0].subject, 'Bidwell trails are now CLOSED');
-	assert.match(sent[0].headers!['List-Unsubscribe']!, /u=1&t=/);
-	assert.equal(sent[0].headers!['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
-	assert.equal(readHistory().events.length, 1);
-	assert.equal(readHistory().events[0].status, 'Closed');
+	expect(checker.config.lastStatus).toBe('Closed');
+	expect(sent.length).toBe(1);
+	expect(sent[0].to).toBe('a@example.com');
+	expect(sent[0].subject).toBe('Bidwell trails are now CLOSED');
+	expect(sent[0].headers!['List-Unsubscribe']!).toMatch(/u=1&t=/);
+	expect(sent[0].headers!['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+	expect(readHistory().events.length).toBe(1);
+	expect(readHistory().events[0].status).toBe('Closed');
 });
 
 test('no change sends nothing', async () => {
@@ -145,7 +144,7 @@ test('no change sends nothing', async () => {
 	fetchBehavior = async () => ({ ok: true, status: 200, text: async () => page('CLOSED', 'CLOSED') });
 	await checker.fetchStatus();
 
-	assert.deepEqual(sent, []);
+	expect(sent).toEqual([]);
 });
 
 test('failed check emails the admin once, then once more on recovery', async () => {
@@ -155,18 +154,18 @@ test('failed check emails the admin once, then once more on recovery', async () 
 	};
 	await checker.fetchStatus();
 
-	assert.equal(sent.length, 1);
-	assert.equal(sent[0].to, 'admin@example.com');
-	assert.equal(sent[0].subject, 'Trail Checker: status check failing');
-	assert.match(sent[0].text!, /network down/);
+	expect(sent.length).toBe(1);
+	expect(sent[0].to).toBe('admin@example.com');
+	expect(sent[0].subject).toBe('Trail Checker: status check failing');
+	expect(sent[0].text!).toMatch(/network down/);
 	// still failing: no second alert
 	await checker.fetchStatus();
-	assert.equal(sent.length, 1);
+	expect(sent.length).toBe(1);
 	// recovered: one recovery email, and no user notifications on the first known status
 	fetchBehavior = async () => ({ ok: true, status: 200, text: async () => page('OPEN', 'OPEN') });
 	await checker.fetchStatus();
-	assert.equal(sent.length, 2);
-	assert.equal(sent[1].subject, 'Trail Checker: status check recovered');
+	expect(sent.length).toBe(2);
+	expect(sent[1].subject).toBe('Trail Checker: status check recovered');
 });
 
 test('HTTP error from the status page is a check failure', async () => {
@@ -174,9 +173,9 @@ test('HTTP error from the status page is a check failure', async () => {
 	fetchBehavior = async () => ({ ok: false, status: 503, text: async () => '' });
 	await checker.fetchStatus();
 
-	assert.equal(sent.length, 1);
-	assert.equal(sent[0].subject, 'Trail Checker: status check failing');
-	assert.match(sent[0].text!, /HTTP 503/);
+	expect(sent.length).toBe(1);
+	expect(sent[0].subject).toBe('Trail Checker: status check failing');
+	expect(sent[0].text!).toMatch(/HTTP 503/);
 });
 
 test('unparseable page is a check failure, keeping the last known status', async () => {
@@ -185,9 +184,9 @@ test('unparseable page is a check failure, keeping the last known status', async
 	fetchBehavior = async () => ({ ok: true, status: 200, text: async () => page('OPEN TO PEDESTRIANS ONLY', 'OPEN') });
 	await checker.fetchStatus();
 
-	assert.equal(sent.length, 1);
-	assert.match(sent[0].text!, /PEDESTRIANS/);
-	assert.equal(checker.config.lastStatus, 'Open');
+	expect(sent.length).toBe(1);
+	expect(sent[0].text!).toMatch(/PEDESTRIANS/);
+	expect(checker.config.lastStatus).toBe('Open');
 });
 
 test('override active skips the check entirely', async () => {
@@ -195,9 +194,9 @@ test('override active skips the check entirely', async () => {
 	const checker = stubbedChecker();
 	await checker.fetchStatus();
 
-	assert.equal(fetchCalls.length, 0);
-	assert.deepEqual(sent, []);
-	assert.equal(checker.config.lastStatus, 'NULL');
+	expect(fetchCalls.length).toBe(0);
+	expect(sent).toEqual([]);
+	expect(checker.config.lastStatus).toBe('NULL');
 });
 
 test('sendStatusEmail uses the given transporter and adds one-click unsubscribe headers', async () => {
@@ -205,29 +204,29 @@ test('sendStatusEmail uses the given transporter and adds one-click unsubscribe 
 	const user: User = { id: 1, email: 'a@example.com', phone: '' };
 	const info = await checker.sendStatusEmail('Closed', user, fakeTransporter as any);
 
-	assert.equal(info.messageId, 'fake-1');
-	assert.equal(sent.length, 1);
-	assert.equal(sent[0].to, 'a@example.com');
-	assert.equal(sent[0].subject, 'Bidwell trails are now CLOSED');
-	assert.match(sent[0].headers!['List-Unsubscribe']!, /u=1&t=/);
+	expect(info.messageId).toBe('fake-1');
+	expect(sent.length).toBe(1);
+	expect(sent[0].to).toBe('a@example.com');
+	expect(sent[0].subject).toBe('Bidwell trails are now CLOSED');
+	expect(sent[0].headers!['List-Unsubscribe']!).toMatch(/u=1&t=/);
 });
 
 test('getTransporter uses Gmail without SMTP_HOST and SMTP with a host', () => {
 	const checker = new CheckerClass(false);
 	delete process.env.SMTP_HOST;
 	const gmail = checker.getTransporter() as any;
-	assert.equal(gmail.options.service, 'Gmail');
+	expect(gmail.options.service).toBe('Gmail');
 
 	process.env.SMTP_HOST = 'smtp.example';
 	process.env.SMTP_PORT = '465';
 	const smtps = checker.getTransporter() as any;
-	assert.equal(smtps.options.host, 'smtp.example');
-	assert.equal(smtps.options.port, 465);
-	assert.equal(smtps.options.secure, true);
+	expect(smtps.options.host).toBe('smtp.example');
+	expect(smtps.options.port).toBe(465);
+	expect(smtps.options.secure).toBe(true);
 
 	process.env.SMTP_PORT = '587';
 	const smtp = checker.getTransporter() as any;
-	assert.equal(smtp.options.secure, false);
+	expect(smtp.options.secure).toBe(false);
 
 	delete process.env.SMTP_HOST;
 	delete process.env.SMTP_PORT;
@@ -236,8 +235,8 @@ test('getTransporter uses Gmail without SMTP_HOST and SMTP with a host', () => {
 test('currentStatus reports the last known status', () => {
 	const checker = stubbedChecker();
 	checker.config.lastStatus = 'Closed';
-	assert.equal(checker.currentStatus().trailStatus, 'Closed');
-	assert.ok(checker.currentStatus().lastCheck instanceof Date);
+	expect(checker.currentStatus().trailStatus).toBe('Closed');
+	expect(checker.currentStatus().lastCheck instanceof Date).toBeTruthy();
 });
 
 test('sendTrailReport emails the admin with the report details', async () => {
@@ -252,13 +251,13 @@ test('sendTrailReport emails the admin with the report details', async () => {
 		email: 'rider@example.com'
 	});
 
-	assert.equal(sent.length, 1);
-	assert.equal(sent[0].to, 'admin@example.com');
-	assert.match(sent[0].subject!, /Trail status discrepancy/);
-	assert.match(sent[0].text!, /North Rim/);
-	assert.match(sent[0].text!, /Gate shut/);
-	assert.match(sent[0].text!, /rider@example.com/);
-	assert.match(sent[0].text!, /Current checker status: Open/);
+	expect(sent.length).toBe(1);
+	expect(sent[0].to).toBe('admin@example.com');
+	expect(sent[0].subject!).toMatch(/Trail status discrepancy/);
+	expect(sent[0].text!).toMatch(/North Rim/);
+	expect(sent[0].text!).toMatch(/Gate shut/);
+	expect(sent[0].text!).toMatch(/rider@example.com/);
+	expect(sent[0].text!).toMatch(/Current checker status: Open/);
 });
 
 test('sendRegEmail sends the welcome email to the new user', async () => {
@@ -266,10 +265,10 @@ test('sendRegEmail sends the welcome email to the new user', async () => {
 	const user: User = { id: 3, email: 'new@example.com', phone: '' };
 	await checker.sendRegEmail(user);
 
-	assert.equal(sent.length, 1);
-	assert.equal(sent[0].to, 'new@example.com');
-	assert.equal(sent[0].subject, 'Welcome to Bidwell Trail Checker');
-	assert.ok(sent[0].headers!['List-Unsubscribe']);
+	expect(sent.length).toBe(1);
+	expect(sent[0].to).toBe('new@example.com');
+	expect(sent[0].subject).toBe('Welcome to Bidwell Trail Checker');
+	expect(sent[0].headers!['List-Unsubscribe']).toBeTruthy();
 });
 
 test('sendMail never rejects when sending fails', async () => {
@@ -289,10 +288,10 @@ test('manualOverride sets the status, records it, and notifies', async () => {
 	// manualOverride fires recordStatus and sendNotifications without awaiting
 	await new Promise((resolve) => setTimeout(resolve, 100));
 
-	assert.equal(checker.config.lastStatus, 'Closed');
-	assert.equal(sent.length, 1);
-	assert.equal(sent[0].to, 'a@example.com');
+	expect(checker.config.lastStatus).toBe('Closed');
+	expect(sent.length).toBe(1);
+	expect(sent[0].to).toBe('a@example.com');
 	const history = readHistory();
-	assert.equal(history.events[history.events.length - 1].status, 'Closed');
-	assert.equal(history.events[history.events.length - 1].source, 'manual');
+	expect(history.events[history.events.length - 1].status).toBe('Closed');
+	expect(history.events[history.events.length - 1].source).toBe('manual');
 });
