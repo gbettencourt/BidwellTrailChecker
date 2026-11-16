@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanPhoneNumber, formatDuration, formatPhoneNumber } from './Util';
+import { cleanPhoneNumber, extractEmailAddress, formatDuration, formatPhoneNumber } from './Util';
 
 describe('formatPhoneNumber', () => {
 	it('returns an empty string for empty or missing input', () => {
@@ -29,6 +29,20 @@ describe('cleanPhoneNumber', () => {
 	it('strips everything but digits', () => {
 		expect(cleanPhoneNumber('(555) 123-4567')).toBe('5551234567');
 		expect(cleanPhoneNumber()).toBe('');
+	});
+});
+
+describe('extractEmailAddress', () => {
+	it('pulls the address out of a display-name sender', () => {
+		expect(extractEmailAddress('Chico MTB <mail@chicomtb.com>')).toBe('mail@chicomtb.com');
+	});
+
+	it('returns a bare address unchanged', () => {
+		expect(extractEmailAddress('mail@chicomtb.com')).toBe('mail@chicomtb.com');
+	});
+
+	it('trims surrounding whitespace', () => {
+		expect(extractEmailAddress('  Chico MTB < mail@chicomtb.com >  ')).toBe('mail@chicomtb.com');
 	});
 });
 

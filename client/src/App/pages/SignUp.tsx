@@ -5,7 +5,7 @@ import { Alert, Box, Button, Collapse, FormControlLabel, Link, Paper, Stack, Swi
 import { useForm } from 'react-hook-form';
 import { Captcha } from '../components/Captcha';
 import { StatusCard } from '../components/StatusCard';
-import { cleanPhoneNumber, formatPhoneNumber, getRandomInt, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
+import { cleanPhoneNumber, extractEmailAddress, formatPhoneNumber, getRandomInt, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
 import type { AppInitialData } from '../app-data';
 
 interface FormValues {
@@ -136,7 +136,7 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 						{initialData?.notificationFromEmail && (
 							<Typography color="text.secondary">
 								Our emails come from{' '}
-								<Link href={`mailto:${initialData.notificationFromEmail}`}>{initialData.notificationFromEmail}</Link> — if the
+								<Link href={`mailto:${extractEmailAddress(initialData.notificationFromEmail)}`}>{initialData.notificationFromEmail}</Link> — if the
 								confirmation lands in spam, add that address to your contacts so you don't miss trail alerts.
 							</Typography>
 						)}
