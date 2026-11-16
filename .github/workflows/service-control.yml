@@ -1,0 +1,50 @@
+name: Control Service
+
+'on':
+    workflow_dispatch:
+        inputs:
+            action:
+                description: 'Service action'
+                required: true
+                type: choice
+                options:
+                    - restart
+                    - start
+                    - stop
+                    - status
+                default: 'restart'
+
+jobs:
+    control:
+        runs-on: [self-hosted, linux, ARM64]
+
+        env:
+            SERVICE_NAME: trailchecker
+
+        steps:
+            - name: Verify this run is on master
+              run: |
+                  if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+                    echo "Refusing to control the service from $GITHUB_REF — service control only runs on master" >&2
+                    exit 1
+                  fi
+
+            - name: Run the service action
+              if: ${{ inputs.action != 'status' }}
+              run: sudo systemctl "${{ inputs.action }}" "$SERVICE_NAME"
+
+            - name: Show service status
+              run: systemctl status "$SERVICE_NAME" || true
+
+            - name: Health-check the live site
+              if: ${{ inputs.action == 'start' || inputs.action == 'restart' }}
+              run: |
+                  for i in 1 2 3 4 5 6; do
+                    if curl -sf https://www.chicomtb.com/api/trailstatus > /dev/null; then
+                      echo "healthy"
+                      exit 0
+                    fi
+                    sleep 5
+                  done
+                  echo "health check failed after ${{ inputs.action }}" >&2
+                  exit 1
