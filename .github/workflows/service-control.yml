@@ -34,7 +34,9 @@ jobs:
               run: sudo systemctl "${{ inputs.action }}" "$SERVICE_NAME"
 
             - name: Show service status
-              run: systemctl status "$SERVICE_NAME" || true
+              run: |
+                  systemctl is-active "$SERVICE_NAME" || true
+                  systemctl show "$SERVICE_NAME" -p ActiveState -p SubState -p ActiveEnterTimestamp
 
             - name: Health-check the live site
               if: ${{ inputs.action == 'start' || inputs.action == 'restart' }}
