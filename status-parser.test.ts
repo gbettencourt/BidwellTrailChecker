@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { parseTrailStatus } from './status-parser.js';
 
 // trimmed-down copy of the status table on the city's Trail, Gate, & Facility Status page
@@ -16,28 +16,25 @@ const page = (north: string, south: string) => `
 	</table>
 </div>`;
 
-test('open when both trail rows are open', () => {
-	expect(parseTrailStatus(page('OPEN', 'OPEN'))).toEqual({ status: 'Open' });
-});
-
-test('closed when both trail rows are closed, even though other facilities are open', () => {
-	expect(parseTrailStatus(page('CLOSED', 'CLOSED'))).toEqual({ status: 'Closed' });
-});
-
-test('closed when only one side is closed', () => {
-	expect(parseTrailStatus(page('OPEN', 'CLOSED'))).toEqual({ status: 'Closed' });
-});
-
-test('ignores case and footnote markers', () => {
-	expect(parseTrailStatus(page('Open*', ' open '))).toEqual({ status: 'Open' });
-});
-
-test('error on unexpected wording instead of guessing', () => {
-	const result = parseTrailStatus(page('OPEN TO PEDESTRIANS ONLY', 'OPEN'));
-	expect('error' in result && result.error.includes('PEDESTRIANS')).toBeTruthy();
-});
-
-test('error when the trail rows are missing', () => {
-	const result = parseTrailStatus('<table><tr><td>Caper Acres</td><td>OPEN</td></tr></table>');
-	expect('error' in result && result.error.includes('no "Upper Park Trails" rows')).toBeTruthy();
+describe('status-parser', () => {
+	test('open when both trail rows are open', () => {
+		expect(parseTrailStatus(page('OPEN', 'OPEN'))).toEqual({ status: 'Open' });
+	});
+	test('closed when both trail rows are closed, even though other facilities are open', () => {
+		expect(parseTrailStatus(page('CLOSED', 'CLOSED'))).toEqual({ status: 'Closed' });
+	});
+	test('closed when only one side is closed', () => {
+		expect(parseTrailStatus(page('OPEN', 'CLOSED'))).toEqual({ status: 'Closed' });
+	});
+	test('ignores case and footnote markers', () => {
+		expect(parseTrailStatus(page('Open*', ' open '))).toEqual({ status: 'Open' });
+	});
+	test('error on unexpected wording instead of guessing', () => {
+		const result = parseTrailStatus(page('OPEN TO PEDESTRIANS ONLY', 'OPEN'));
+		expect('error' in result && result.error.includes('PEDESTRIANS')).toBeTruthy();
+	});
+	test('error when the trail rows are missing', () => {
+		const result = parseTrailStatus('<table><tr><td>Caper Acres</td><td>OPEN</td></tr></table>');
+		expect('error' in result && result.error.includes('no "Upper Park Trails" rows')).toBeTruthy();
+	});
 });
