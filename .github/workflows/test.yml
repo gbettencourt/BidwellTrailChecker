@@ -23,8 +23,10 @@ jobs:
             - name: Install client dependencies
               run: npm ci
               working-directory: client
-            - name: Run tests
-              run: npm test
+            - name: Check server types
+              run: npm run check-types
             - name: Check client types
               run: npx tsc --noEmit -p tsconfig.json
               working-directory: client
+            - name: Run tests
+              run: npm test
