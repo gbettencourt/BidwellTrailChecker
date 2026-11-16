@@ -5,6 +5,7 @@ import path from 'node:path';
 
 let tmp: string;
 let originalCwd: string;
+let originalConsole: { log: typeof console.log; warn: typeof console.warn; error: typeof console.error };
 let recordStatus: typeof import('./history.js').recordStatus;
 let statusHistory: typeof import('./history.js').statusHistory;
 
@@ -13,12 +14,22 @@ describe('history', () => {
 		originalCwd = process.cwd();
 		tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'btc-history-'));
 		process.chdir(tmp);
+		// silence the logger's console dual-write during tests
+		originalConsole = { log: console.log, warn: console.warn, error: console.error };
+		console.log = () => {};
+		console.warn = () => {};
+		console.error = () => {};
 		({ recordStatus, statusHistory } = await import('./history.js'));
 	});
+
 	afterAll(() => {
+		console.log = originalConsole.log;
+		console.warn = originalConsole.warn;
+		console.error = originalConsole.error;
 		process.chdir(originalCwd);
 		fs.rmSync(tmp, { recursive: true, force: true });
 	});
+
 	test('empty history has no current status and no events', async () => {
 		const result = await statusHistory();
 		expect(result.current).toBe(null);
