@@ -93,6 +93,11 @@ export function getPageMetadata(pathname: string, context: MetadataContext): Pag
 			title: 'Report Trail Status or Issue | Bidwell Trail Checker',
 			description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.'
 		},
+		'/about': {
+			title: 'About | Bidwell Trail Checker',
+			description:
+				'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.'
+		},
 		'/unsubscribe': {
 			title: `Unsubscribe | ${PAGE_TITLE}`,
 			description: 'Unsubscribe from Bidwell Park trail status alerts.',

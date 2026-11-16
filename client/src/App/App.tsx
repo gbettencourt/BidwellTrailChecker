@@ -13,6 +13,7 @@ import { Unsubscribe } from './pages/Unsubscribe';
 import { AdminPage } from './pages/Admin';
 import { StatusHistory } from './pages/StatusHistory';
 import { TrailReportPage } from './pages/TrailReport';
+import { About } from './pages/About';
 import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
 import type { AppInitialData } from './app-data';
@@ -32,6 +33,7 @@ export const App: React.FC<AppProps> = ({ initialUrl, initialData }) => {
 				<Route path="/admin" element={<AdminPage />} />
 				<Route path="/history" element={<StatusHistory />} />
 				<Route path="/report" element={<TrailReportPage />} />
+				<Route path="/about" element={<About />} />
 				<Route path="/map" element={<MapPage initialData={initialData} />} />
 			</Routes>
 		</Layout>
@@ -67,12 +69,13 @@ type LayoutProps = {
 	children: ReactNode;
 };
 
-// header nav: Map, History, Report. On small screens the inline links
+// header nav: Map, History, Report, About. On small screens the inline links
 // collapse into a hamburger menu so the title and GitHub link keep room.
 const NAV_ITEMS = [
 	{ label: 'Map', to: '/map' },
 	{ label: 'History', to: '/history' },
-	{ label: 'Report', to: '/report' }
+	{ label: 'Report', to: '/report' },
+	{ label: 'About', to: '/about' }
 ];
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -122,6 +125,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 							</Button>
 							<Button component={RouterLink} to="/report" color="inherit" sx={{ minWidth: 0 }}>
 								Report
+							</Button>
+							<Button component={RouterLink} to="/about" color="inherit" sx={{ minWidth: 0 }}>
+								About
 							</Button>
 						</Box>
 						<IconButton
