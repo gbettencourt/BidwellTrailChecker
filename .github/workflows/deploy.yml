@@ -53,7 +53,7 @@ jobs:
 
             - name: Sync built tree to the service directory
               run: |
-                  rsync -a --no-group --no-perms --delete \
+                  rsync -a --no-group --no-perms --omit-dir-times --delete \
                     --exclude '/.env' \
                     --exclude '/db.json' \
                     --exclude '/history.json' \
