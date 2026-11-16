@@ -1,0 +1,77 @@
+name: Backup data
+
+'on':
+    workflow_dispatch:
+    schedule:
+        - cron: '0 17 * * 0'
+
+jobs:
+    backup:
+        runs-on: [self-hosted, linux, ARM64]
+
+        env:
+            DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+            BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+            BACKUP_REPO: gbettencourt/BidwellTrailChecker-backups
+
+        steps:
+            - name: Verify this run is on master
+              run: |
+                  if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+                    echo "Refusing to back up from $GITHUB_REF — backups only run on master" >&2
+                    exit 1
+                  fi
+
+            - name: Check the backup target is configured
+              run: |
+                  if [ -z "$DEPLOY_DIR" ]; then
+                    echo "DEPLOY_DIR secret is not set — add it under repo Settings > Secrets and variables > Actions" >&2
+                    exit 1
+                  fi
+                  if [ -z "$BACKUP_REPO_TOKEN" ]; then
+                    echo "BACKUP_REPO_TOKEN secret is not set — add it under repo Settings > Secrets and variables > Actions" >&2
+                    exit 1
+                  fi
+
+            - name: Check out the backup repo
+              run: |
+                  rm -rf backup
+                  git clone "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${BACKUP_REPO}.git" backup
+                  cd backup
+                  default_branch=$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p' || true)
+                  if [ -z "$default_branch" ] || [ "$default_branch" = "(unknown)" ]; then
+                    default_branch=main
+                  fi
+                  git checkout "$default_branch" 2>/dev/null || git checkout -b "$default_branch"
+                  echo "BACKUP_BRANCH=$default_branch" >> "$GITHUB_ENV"
+
+            - name: Copy the live data files
+              working-directory: backup
+              run: |
+                  for f in db.json history.json trailOverride.json; do
+                    if [ -f "$DEPLOY_DIR/$f" ]; then
+                      cp "$DEPLOY_DIR/$f" "$f"
+                    else
+                      rm -f "$f"
+                    fi
+                  done
+
+            - name: Validate the copied files are good JSON
+              working-directory: backup
+              run: |
+                  for f in db.json history.json trailOverride.json; do
+                    if [ -f "$f" ]; then
+                      node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$f"
+                    fi
+                  done
+
+            - name: Commit and push if anything changed
+              working-directory: backup
+              run: |
+                  git add -A
+                  if git diff --cached --quiet; then
+                    echo "no changes to back up"
+                  else
+                    git -c user.name="gbettencourt" -c user.email="33299088+gbettencourt@users.noreply.github.com" commit -m "Backup $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                    git push origin "$BACKUP_BRANCH"
+                  fi
