@@ -32,6 +32,13 @@ export const cleanPhoneNumber = (input?: string): string => {
   return input ? input.replace(/\D/g, "") : "";
 };
 
+// Pulls the bare address out of a "Display Name <address>" sender string;
+// returns the input unchanged when there is no display name.
+export const extractEmailAddress = (address: string): string => {
+  const match = address.match(/<([^>]+)>/);
+  return match ? match[1].trim() : address.trim();
+};
+
 export const TRAIL_PAGE_URL =
   "https://chico.ca.us/Our-Community/Parks-Recreation-and-Experience-the-Outdoors/Park-Trails/Trail-Gate--Facility-Status-and-Hours/index.html";
 
