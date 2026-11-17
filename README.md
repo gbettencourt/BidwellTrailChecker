@@ -16,7 +16,7 @@ The homepage server-renders and hydrates the React app, including the latest tra
 
 ## Tech
 
-- **Server:** Node 22, Express 5, TypeScript, [lowdb](https://github.com/typicode/lowdb) JSON files for storage, nodemailer and Twilio
+- **Server:** Node 26, Express 5, TypeScript, [lowdb](https://github.com/typicode/lowdb) JSON files for storage, nodemailer and Twilio
 - **Client:** React 19, MUI, Vite, Leaflet
 
 ## Setup
