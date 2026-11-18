@@ -20,5 +20,6 @@ describe('About', () => {
 		expect(screen.getByRole('link', { name: 'map' })).toHaveAttribute('href', '/map');
 		expect(screen.getByRole('link', { name: 'Sign up on the home page' })).toHaveAttribute('href', '/');
 		expect(screen.getByRole('link', { name: 'report it' })).toHaveAttribute('href', '/report');
+		expect(screen.getByRole('link', { name: 'Gary Bettencourt' })).toHaveAttribute('href', 'https://garybettencourt.com');
 	});
 });

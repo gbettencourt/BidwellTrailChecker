@@ -81,6 +81,12 @@ export const About: React.FC = () => (
 			</Typography>
 		</Stack>
 
-		<Typography color="text.secondary">Built and run by Gary Bettencourt, a Chico mountain biker.</Typography>
+		<Typography color="text.secondary">
+			Built and run by{' '}
+			<Link href="https://garybettencourt.com" target="_blank" rel="noopener">
+				Gary Bettencourt
+			</Link>
+			, a Chico mountain biker.
+		</Typography>
 	</Stack>
 );
