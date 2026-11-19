@@ -61,6 +61,14 @@ describe('StatusCard', () => {
 });
 
 describe('StatusCard reopening estimate', () => {
+	// a YYYY-MM-DD string shifted by n days, in America/Los_Angeles,
+	// so the ETA tests stay valid no matter when they run
+	const datePlusDays = (date: string, days: number) => {
+		const [y, m, d] = date.split('-').map(Number);
+		return new Date(y, m - 1, d + days, 12).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+	};
+	const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+
 	const estimate = {
 		available: true,
 		estimatedDate: '2026-11-21',
@@ -88,19 +96,31 @@ describe('StatusCard reopening estimate', () => {
 	});
 
 	it('shows the estimated reopening with the weather behind it', async () => {
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(today(), 2) }) });
 		renderClosedCard();
 		await waitFor(() => expect(screen.getByText('Estimated reopening')).toBeInTheDocument());
-		expect(screen.getByText('Saturday, Nov 21')).toBeInTheDocument();
+		expect(screen.getByText('In 2–3 days')).toBeInTheDocument();
 		expect(screen.getByText('1.7 in of rain since Sun, Nov 15 · 1 sunny day · highs near 54°')).toBeInTheDocument();
 		expect(screen.getByText('Estimate only — the City of Chico decides when the trails actually open.')).toBeInTheDocument();
 		expect(fetchMock).toHaveBeenCalledWith('/api/reopening');
 	});
 
 	it('says Today when the estimate is today', async () => {
-		const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
-		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: today }) });
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: today() }) });
 		renderClosedCard();
 		await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+	});
+
+	it('says Tomorrow when the estimate is tomorrow', async () => {
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(today(), 1) }) });
+		renderClosedCard();
+		await waitFor(() => expect(screen.getByText('Tomorrow')).toBeInTheDocument());
+	});
+
+	it('says sometime this week when the estimate is later in the week', async () => {
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(today(), 5) }) });
+		renderClosedCard();
+		await waitFor(() => expect(screen.getByText('Sometime this week')).toBeInTheDocument());
 	});
 
 	it('says more than a week away when no date is in the forecast', async () => {

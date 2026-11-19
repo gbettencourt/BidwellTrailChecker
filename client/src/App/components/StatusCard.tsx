@@ -17,8 +17,6 @@ interface StatusCardProps {
 
 const sinceFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
 
-const etaFormat = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
-
 // shape of GET /api/reopening when the trails are closed and an estimate exists
 type ReopeningEstimate = {
 	available: boolean;
@@ -34,6 +32,18 @@ type ReopeningEstimate = {
 const localNoon = (date: string) => new Date(`${date}T12:00:00`);
 
 const todayLocal = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+
+// the drying model is a rough guess, so the card shows a vague window
+// instead of an exact date — a specific day would imply more precision
+// than the model has
+const vagueEtaText = (etaDate: string | null, today = todayLocal()): string => {
+	if (etaDate === null) return 'More than a week away';
+	const days = Math.round((localNoon(etaDate).getTime() - localNoon(today).getTime()) / 86400000);
+	if (days <= 0) return 'Today';
+	if (days === 1) return 'Tomorrow';
+	if (days <= 3) return 'In 2–3 days';
+	return 'Sometime this week';
+};
 
 const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
@@ -84,7 +94,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 	}, [status, loading]);
 
 	const etaDate = estimate?.estimatedDate ?? null;
-	const etaText = etaDate === null ? 'More than a week away' : etaDate === todayLocal() ? 'Today' : etaFormat.format(localNoon(etaDate));
+	const etaText = vagueEtaText(etaDate);
 	const etaParts: string[] = [];
 	if (estimate && estimate.rainInches !== undefined && estimate.closedSince) {
 		etaParts.push(`${estimate.rainInches} in of rain since ${sinceFormat.format(new Date(estimate.closedSince))}`);
