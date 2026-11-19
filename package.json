@@ -22,7 +22,7 @@
 		"express-winston": "^4.2.0",
 		"jsonwebtoken": "^9.0.3",
 		"lowdb": "^7.0.1",
-		"node-html-parser": "^7.0.1",
+		"node-html-parser": "^9.0.7",
 		"node-schedule": "^2.1.1",
 		"nodemailer": "^10.6.0",
 		"twilio": "^5.10.2",
