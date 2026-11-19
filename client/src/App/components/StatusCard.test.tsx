@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { StatusCard, formatLastCheck } from './StatusCard';
 
@@ -57,5 +57,79 @@ describe('StatusCard', () => {
 		renderCard({ loading: true });
 		expect(screen.queryByText('Open')).not.toBeInTheDocument();
 		expect(document.querySelector('.MuiSkeleton-root')).not.toBeNull();
+	});
+});
+
+describe('StatusCard reopening estimate', () => {
+	const estimate = {
+		available: true,
+		estimatedDate: '2026-11-21',
+		closedSince: '2026-11-15T10:00:00Z',
+		rainInches: 1.7,
+		sunnyDays: 1,
+		highTempF: 54
+	};
+	let fetchMock: ReturnType<typeof vi.fn>;
+
+	const renderClosedCard = () =>
+		render(
+			<MemoryRouter>
+				<StatusCard status="Closed" lastCheck="2026-11-15T19:55:00Z" loading={false} since="2026-11-15T10:00:00Z" now={NOW} />
+			</MemoryRouter>
+		);
+
+	beforeEach(() => {
+		fetchMock = vi.fn(async () => ({ ok: true, json: async () => estimate }));
+		vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('shows the estimated reopening with the weather behind it', async () => {
+		renderClosedCard();
+		await waitFor(() => expect(screen.getByText('Estimated reopening')).toBeInTheDocument());
+		expect(screen.getByText('Saturday, Nov 21')).toBeInTheDocument();
+		expect(screen.getByText('1.7 in of rain since Sun, Nov 15 · 1 sunny day · highs near 54°')).toBeInTheDocument();
+		expect(screen.getByText('Estimate only — the City of Chico decides when the trails actually open.')).toBeInTheDocument();
+		expect(fetchMock).toHaveBeenCalledWith('/api/reopening');
+	});
+
+	it('says Today when the estimate is today', async () => {
+		const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: today }) });
+		renderClosedCard();
+		await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+	});
+
+	it('says more than a week away when no date is in the forecast', async () => {
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: null }) });
+		renderClosedCard();
+		await waitFor(() => expect(screen.getByText('More than a week away')).toBeInTheDocument());
+	});
+
+	it('hides the estimate when none is available', async () => {
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ available: false }) });
+		renderClosedCard();
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+		expect(screen.queryByText('Estimated reopening')).not.toBeInTheDocument();
+	});
+
+	it('hides the estimate when the fetch fails', async () => {
+		fetchMock.mockRejectedValue(new Error('network down'));
+		renderClosedCard();
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+		expect(screen.queryByText('Estimated reopening')).not.toBeInTheDocument();
+	});
+
+	it('does not fetch an estimate while the trails are open', () => {
+		render(
+			<MemoryRouter>
+				<StatusCard status="Open" lastCheck="2026-11-15T19:55:00Z" loading={false} now={NOW} />
+			</MemoryRouter>
+		);
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(screen.queryByText('Estimated reopening')).not.toBeInTheDocument();
 	});
 });

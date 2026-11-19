@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import adminRouter from './admin-router.js';
 import { logError, logInfo, logWarn } from './logger.js';
 import { statusHistory } from './history.js';
+import { getReopeningEstimate } from './reopening.js';
 import { renderPage } from './seo.js';
 import { renderApp, renderPageContent, renderPageMetadata } from './ssr-renderer.js';
 import { verifyUnsubscribeToken } from './unsubscribe.js';
@@ -138,6 +139,10 @@ app.get('/api/trailstatus', (req, res) => {
 
 app.get('/api/statushistory', async (req, res) => {
 	res.json(await statusHistory());
+});
+
+app.get('/api/reopening', async (_req, res) => {
+	res.json(await getReopeningEstimate());
 });
 
 app.post(

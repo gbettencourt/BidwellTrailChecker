@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import DoNotDisturbOnRounded from '@mui/icons-material/DoNotDisturbOnRounded';
 import HelpRounded from '@mui/icons-material/HelpRounded';
@@ -16,6 +16,24 @@ interface StatusCardProps {
 }
 
 const sinceFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
+
+const etaFormat = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
+
+// shape of GET /api/reopening when the trails are closed and an estimate exists
+type ReopeningEstimate = {
+	available: boolean;
+	estimatedDate?: string | null;
+	closedSince?: string;
+	rainInches?: number;
+	sunnyDays?: number;
+	highTempF?: number | null;
+};
+
+// a YYYY-MM-DD date parsed as local noon, so formatting it in
+// America/Los_Angeles never lands on the neighboring day
+const localNoon = (date: string) => new Date(`${date}T12:00:00`);
+
+const todayLocal = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
 const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
@@ -42,6 +60,41 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 		isKnown && sinceDate && !isNaN(sinceDate.getTime())
 			? `${status} since ${sinceFormat.format(sinceDate)} (${formatDuration(now - sinceDate.getTime())})`
 			: '';
+
+	// reopening estimate, fetched only while the trails are closed; a
+	// failure just hides the section, it never breaks the status card
+	const [estimate, setEstimate] = useState<ReopeningEstimate | null>(null);
+	const [etaLoading, setEtaLoading] = useState(false);
+	useEffect(() => {
+		if (status !== 'Closed' || loading) return;
+		let cancelled = false;
+		setEtaLoading(true);
+		fetch('/api/reopening')
+			.then((res) => (res.ok ? res.json() : null))
+			.then((data: ReopeningEstimate | null) => {
+				if (!cancelled) setEstimate(data?.available ? data : null);
+			})
+			.catch(() => {})
+			.finally(() => {
+				if (!cancelled) setEtaLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [status, loading]);
+
+	const etaDate = estimate?.estimatedDate ?? null;
+	const etaText = etaDate === null ? 'More than a week away' : etaDate === todayLocal() ? 'Today' : etaFormat.format(localNoon(etaDate));
+	const etaParts: string[] = [];
+	if (estimate && estimate.rainInches !== undefined && estimate.closedSince) {
+		etaParts.push(`${estimate.rainInches} in of rain since ${sinceFormat.format(new Date(estimate.closedSince))}`);
+	}
+	if (estimate?.sunnyDays !== undefined) {
+		etaParts.push(`${estimate.sunnyDays} sunny day${estimate.sunnyDays === 1 ? '' : 's'}`);
+	}
+	if (estimate?.highTempF !== undefined && estimate.highTempF !== null) {
+		etaParts.push(`highs near ${Math.round(estimate.highTempF)}°`);
+	}
 
 	return (
 		<Paper
@@ -90,6 +143,30 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 							</Link>
 						</Stack>
 					</Stack>
+					{!isOpen && isKnown && (etaLoading || estimate) && (
+						<Box sx={{ mt: 2.5, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+							{etaLoading ? (
+								<Skeleton variant="text" width="55%" />
+							) : (
+								<>
+									<Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: '0.1em' }}>
+										Estimated reopening
+									</Typography>
+									<Typography variant="h6" component="p" sx={{ mt: 0.5 }}>
+										{etaText}
+									</Typography>
+									{etaParts.length > 0 && (
+										<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+											{etaParts.join(' · ')}
+										</Typography>
+									)}
+									<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+										Estimate only — the City of Chico decides when the trails actually open.
+									</Typography>
+								</>
+							)}
+						</Box>
+					)}
 				</>
 			)}
 		</Paper>
