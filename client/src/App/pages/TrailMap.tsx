@@ -59,6 +59,32 @@ const CaptureMap: React.FC<{ onMap: (map: L.Map) => void }> = ({ onMap }) => {
 	return null;
 };
 
+// button that snaps the map back to the full-park view (same bounds FitToTrails uses on load)
+const ResetViewControl: React.FC<{ trails: Trails }> = ({ trails }) => {
+	const map = useMap();
+	useEffect(() => {
+		const control = new L.Control({ position: 'bottomright' });
+		control.onAdd = () => {
+			const el = L.DomUtil.create('button', 'leaflet-control reset-view-control');
+			el.type = 'button';
+			el.title = 'Reset view';
+			el.setAttribute('aria-label', 'Reset view');
+			el.textContent = 'Reset view';
+			L.DomEvent.disableClickPropagation(el);
+			L.DomEvent.on(el, 'click', () => {
+				const bounds = L.geoJSON(trails).getBounds();
+				if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24] });
+			});
+			return el;
+		};
+		control.addTo(map);
+		return () => {
+			control.remove();
+		};
+	}, [map, trails]);
+	return null;
+};
+
 const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 	const [trails, setTrails] = useState<Trails>();
 	const [elevations, setElevations] = useState<Record<string, TrailElevation>>({});
@@ -224,6 +250,20 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 						padding: '1px 5px'
 					},
 					'& .trail-label::before': { display: 'none' },
+					// reset-view button (a plain Leaflet control in the bottom-right corner)
+					'& .reset-view-control': {
+						background: '#fff',
+						border: '1px solid rgba(0, 0, 0, 0.2)',
+						borderRadius: 4,
+						boxShadow: '0 1px 5px rgba(0, 0, 0, 0.4)',
+						color: '#222',
+						cursor: 'pointer',
+						fontFamily: 'inherit',
+						fontSize: 12,
+						fontWeight: 600,
+						padding: '6px 10px'
+					},
+					'& .reset-view-control:hover': { background: '#f4f4f4' },
 					// darken the street map in dark mode so it doesn't glare (satellite imagery is left as is)
 					'@media (prefers-color-scheme: dark)': {
 						'& .street-tiles': { filter: 'invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9)' }
@@ -256,6 +296,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 							{/* remount on toggle, and once elevations arrive, so popups, hover handlers and draw order pick up the new style */}
 							<GeoJSON key={`${showAlwaysOpen}-${Object.keys(elevations).length > 0}`} data={trails} style={style} onEachFeature={onEachTrail} />
 							<FitToTrails trails={trails} />
+							<ResetViewControl trails={trails} />
 						</>
 					)}
 				</MapContainer>
