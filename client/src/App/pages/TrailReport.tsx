@@ -151,7 +151,7 @@ export const TrailReportPage: React.FC = () => {
 						<TextField
 							label="When did you observe this?"
 							type="datetime-local"
-							InputLabelProps={{ shrink: true }}
+							slotProps={{ inputLabel: { shrink: true } }}
 							{...register('observedAt')}
 						/>
 
