@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { OverrideValue, readOverride, writeOverride } from './override-util.js';
-import Checker from 'checker.js';
+import Checker from './checker.js';
 import DbUtil from './db.js';
 import { getLatestLogId, getLogEntries, logError, logInfo } from './logger.js';
 
