@@ -1,19 +1,22 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, Suspense, lazy, useState } from 'react';
 import { GitHub } from '@mui/icons-material';
 import HistoryIcon from '@mui/icons-material/History';
 import MenuIcon from '@mui/icons-material/Menu';
 import BikeIcon from '@mui/icons-material/DirectionsBike';
 import MapOutlined from '@mui/icons-material/MapOutlined';
-import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Menu, MenuItem, Stack } from '@mui/material';
+import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Menu, MenuItem, Skeleton, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { Route, Routes, BrowserRouter, MemoryRouter, Link as RouterLink, useLocation } from 'react-router-dom';
 import { SignUp } from './pages/SignUp';
 import { MapPage } from './pages/MapPage';
-import { Unsubscribe } from './pages/Unsubscribe';
-import { AdminPage } from './pages/Admin';
-import { StatusHistory } from './pages/StatusHistory';
-import { TrailReportPage } from './pages/TrailReport';
-import { About } from './pages/About';
+// secondary routes are split out of the main chunk and loaded on demand;
+// the homepage stays in the main chunk (it's the landing page and the full SSR route),
+// and the map is already split inside MapPage
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe').then((m) => ({ default: m.Unsubscribe })));
+const AdminPage = lazy(() => import('./pages/Admin').then((m) => ({ default: m.AdminPage })));
+const StatusHistory = lazy(() => import('./pages/StatusHistory').then((m) => ({ default: m.StatusHistory })));
+const TrailReportPage = lazy(() => import('./pages/TrailReport').then((m) => ({ default: m.TrailReportPage })));
+const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
 import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
 import type { AppInitialData } from './app-data';
@@ -27,15 +30,17 @@ type AppProps = {
 export const App: React.FC<AppProps> = ({ initialUrl, initialData }) => {
 	const routes = (
 		<Layout>
-			<Routes>
-				<Route path="/" element={<SignUp initialData={initialData} />} />
-				<Route path="/unsubscribe" element={<Unsubscribe />} />
-				<Route path="/admin" element={<AdminPage />} />
-				<Route path="/history" element={<StatusHistory />} />
-				<Route path="/report" element={<TrailReportPage />} />
-				<Route path="/about" element={<About />} />
-				<Route path="/map" element={<MapPage initialData={initialData} />} />
-			</Routes>
+			<Suspense fallback={<Skeleton variant="rounded" height="60vh" />}>
+				<Routes>
+					<Route path="/" element={<SignUp initialData={initialData} />} />
+					<Route path="/unsubscribe" element={<Unsubscribe />} />
+					<Route path="/admin" element={<AdminPage />} />
+					<Route path="/history" element={<StatusHistory />} />
+					<Route path="/report" element={<TrailReportPage />} />
+					<Route path="/about" element={<About />} />
+					<Route path="/map" element={<MapPage initialData={initialData} />} />
+				</Routes>
+			</Suspense>
 		</Layout>
 	);
 	const metadataSiteUrl = initialData?.siteUrl ?? (initialUrl ? 'https://chicomtb.com' : window.location.origin);
