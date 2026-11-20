@@ -19,6 +19,7 @@ const TrailReportPage = lazy(() => import('./pages/TrailReport').then((m) => ({ 
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
 import { theme } from './theme';
 import { TRAIL_PAGE_URL } from './util/Util';
+import { normalizeTrailStatus } from './util/api';
 import type { AppInitialData } from './app-data';
 import { ClientPageMetadata } from './components/PageMetadata';
 
@@ -46,7 +47,7 @@ export const App: React.FC<AppProps> = ({ initialUrl, initialData }) => {
 	const metadataSiteUrl = initialData?.siteUrl ?? (initialUrl ? 'https://chicomtb.com' : window.location.origin);
 	const metadata = (
 		<ClientPageMetadata
-			status={initialData?.trailStatus === 'Open' || initialData?.trailStatus === 'Closed' ? initialData.trailStatus : 'Unknown'}
+			status={normalizeTrailStatus(initialData?.trailStatus, 'Unknown')}
 			lastCheck={initialData?.lastCheck}
 			siteUrl={metadataSiteUrl}
 		/>

@@ -17,7 +17,7 @@ export function useTrailStatus(initial?: { trailStatus: string; lastCheck: strin
 	const fetchStatus = useCallback(async () => {
 		try {
 			const data = await apiGet<TrailStatusResponse>('/api/trailstatus');
-			setStatus(normalizeTrailStatus(data.trailStatus));
+			setStatus(normalizeTrailStatus(data.trailStatus, 'unknown'));
 			setLastCheck(data.lastCheck);
 		} catch (e) {
 			console.error('Failed to fetch trail status:', e);
