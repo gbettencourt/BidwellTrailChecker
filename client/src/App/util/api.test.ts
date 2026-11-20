@@ -7,14 +7,20 @@ describe('api', () => {
 	});
 
 	it('normalizes only Open and Closed, with a fallback for anything else', () => {
-		expect(normalizeTrailStatus('Open')).toBe('Open');
-		expect(normalizeTrailStatus('Closed')).toBe('Closed');
-		expect(normalizeTrailStatus('')).toBe('unknown');
-		expect(normalizeTrailStatus('open')).toBe('unknown');
-		expect(normalizeTrailStatus(undefined)).toBe('unknown');
-		expect(normalizeTrailStatus(null)).toBe('unknown');
+		expect(normalizeTrailStatus('Open', 'unknown')).toBe('Open');
+		expect(normalizeTrailStatus('Closed', 'unknown')).toBe('Closed');
+		expect(normalizeTrailStatus('', 'unknown')).toBe('unknown');
+		expect(normalizeTrailStatus('open', 'unknown')).toBe('unknown');
+		expect(normalizeTrailStatus(undefined, 'unknown')).toBe('unknown');
+		expect(normalizeTrailStatus(null, 'unknown')).toBe('unknown');
 		expect(normalizeTrailStatus('', 'loading')).toBe('loading');
 		expect(normalizeTrailStatus(undefined, 'loading')).toBe('loading');
+	});
+
+	it('keeps the display spelling when the fallback is Unknown', () => {
+		expect(normalizeTrailStatus('Open', 'Unknown')).toBe('Open');
+		expect(normalizeTrailStatus('', 'Unknown')).toBe('Unknown');
+		expect(normalizeTrailStatus(undefined, 'Unknown')).toBe('Unknown');
 	});
 
 	it('returns the parsed JSON on success', async () => {

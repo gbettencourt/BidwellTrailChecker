@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { normalizeTrailStatus } from '../util/api';
 
 type TrailStatus = 'Open' | 'Closed' | 'Unknown';
 
@@ -166,6 +167,6 @@ export const PageContent: React.FC<{ heading: string; description: string }> = (
 );
 
 export function renderPageMetadata(pathname: string, status: string, lastCheck: string | undefined, siteUrl: string) {
-	const knownStatus: TrailStatus = status === 'Open' || status === 'Closed' ? status : 'Unknown';
+	const knownStatus: TrailStatus = normalizeTrailStatus(status, 'Unknown');
 	return getPageMetadata(pathname, { status: knownStatus, lastCheck, siteUrl });
 }
