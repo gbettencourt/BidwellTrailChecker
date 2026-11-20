@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Request, Response } from 'express';
 import winston from 'winston';
 import expressWinston from 'express-winston';
 import { body, check, validationResult } from 'express-validator';
@@ -6,7 +7,7 @@ import { join, dirname } from 'path';
 import { readFile } from 'node:fs/promises';
 import { randomInt } from 'node:crypto';
 import Checker from './checker.js';
-import DbUtil from './db.js';
+import DbUtil, { User } from './db.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import adminRouter from './admin-router.js';
@@ -160,7 +161,7 @@ app.post(
 		check('observedAt').optional({ checkFalsy: true }).isISO8601(),
 		check('email').optional({ checkFalsy: true }).isEmail().normalizeEmail()
 	],
-	async (req, res) => {
+	async (req: Request, res: Response) => {
 		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
 			return res.status(400).json({ success: false, error: 'Please check the report details and try again.' });
@@ -197,7 +198,7 @@ app.post(
 			.if(body('phone').exists({ checkFalsy: true }))
 			.isMobilePhone('en-US')
 	],
-	async (req, res) => {
+	async (req: Request, res: Response) => {
 		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
 			res.send({
@@ -214,11 +215,12 @@ app.post(
 		const users = await dbUtil.fetchUsers();
 		const existingUser = users.find((user) => user.email === email);
 
-		let user = existingUser;
+		let user: User;
 		if (existingUser) {
 			logInfo(`updating existing user, email=${email}, phone=${phone}`);
 			existingUser.phone = phone;
 			await dbUtil.save();
+			user = existingUser;
 		} else {
 			user = await dbUtil.addUser(email, phone);
 		}
@@ -233,7 +235,7 @@ app.post(
 	}
 );
 
-app.post('/api/rmemail', [check('email').isEmail()], async (req, res) => {
+app.post('/api/rmemail', [check('email').isEmail()], async (req: Request, res: Response) => {
 	logInfo(req.body);
 
 	const errors = validationResult(req);

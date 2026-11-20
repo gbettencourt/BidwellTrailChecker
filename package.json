@@ -29,7 +29,10 @@
 		"winston": "^3.19.0"
 	},
 	"devDependencies": {
+		"@types/express": "^5.0.6",
+		"@types/jsonwebtoken": "^9.0.10",
 		"@types/node": "^26.6.6",
+		"@types/node-schedule": "^2.1.8",
 		"typescript": "^7.0.2",
 		"vitest": "^5.1.0"
 	},

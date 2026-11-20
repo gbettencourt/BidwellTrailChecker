@@ -13,7 +13,8 @@ export const Captcha: React.FC<CaptchaProps> = ({ chars }) => {
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
-		const ctx = canvas?.getContext('2d');
+		if (!canvas) return;
+		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
 
 		// draw at device resolution so the digits stay crisp on high-dpi screens
