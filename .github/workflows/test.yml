@@ -28,5 +28,12 @@ jobs:
             - name: Check client types
               run: npx tsc --noEmit -p tsconfig.json
               working-directory: client
+            - name: Lint server
+              run: npm run lint
+            - name: Lint client
+              run: npm run lint
+              working-directory: client
+            - name: Check formatting
+              run: npm run format:check
             - name: Run tests
               run: npm test
