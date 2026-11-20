@@ -5,7 +5,7 @@ import type { AppInitialData } from './client/src/App/app-data.js';
 type ServerRenderer = {
 	renderApp: (url: string, initialData: AppInitialData) => { markup: string; styles: string; metadata: string };
 	renderMetadata: (pathname: string, status: string, lastCheck: string | undefined, siteUrl: string) => string;
-	renderPageContent: (heading: string, description: string) => string;
+	renderPageContent: (pathname: string) => string;
 };
 
 async function loadRenderer() {
@@ -23,7 +23,7 @@ export async function renderPageMetadata(pathname: string, status: string, lastC
 	return renderer.renderMetadata(pathname, status, lastCheck, siteUrl);
 }
 
-export async function renderPageContent(heading: string, description: string) {
+export async function renderPageContent(pathname: string) {
 	const renderer = await loadRenderer();
-	return renderer.renderPageContent(heading, description);
+	return renderer.renderPageContent(pathname);
 }

@@ -1,3 +1,6 @@
+// loads .env first — admin-router reads ADMIN_PASSWORD/ADMIN_SECRET at
+// module level, so the config has to run during import evaluation
+import './env.js';
 import express from 'express';
 import type { Request, Response } from 'express';
 import winston from 'winston';
@@ -8,7 +11,6 @@ import { readFile } from 'node:fs/promises';
 import { randomInt } from 'node:crypto';
 import Checker from './checker.js';
 import DbUtil, { User } from './db.js';
-import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import adminRouter from './admin-router.js';
 import { logError, logInfo, logWarn } from './logger.js';
@@ -17,7 +19,6 @@ import { getReopeningEstimate } from './reopening.js';
 import { renderPage } from './seo.js';
 import { renderApp, renderPageContent, renderPageMetadata } from './ssr-renderer.js';
 import { verifyUnsubscribeToken } from './unsubscribe.js';
-dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const seoSiteUrl = process.env.APP_URL || 'https://www.chicomtb.com';
@@ -91,32 +92,17 @@ app.get('/', serveApp('/', true));
 // the first HTML instead of appearing only after a client fetch
 app.get('/map', serveApp('/map', false));
 
-// these pages render only a heading + description on the server; the
-// React app hydrates the interactive content
-const shellRoutes = [
-	{
-		path: '/history',
-		heading: 'Upper Bidwell Park trail status history',
-		description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.'
-	},
-	{
-		path: '/report',
-		heading: 'Report a trail status or issue',
-		description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.'
-	},
-	{
-		path: '/about',
-		heading: 'About Bidwell Trail Checker',
-		description: 'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.'
-	}
-];
+// these pages render only a heading + description on the server — both
+// come from the PageMetadata routes record — and the React app hydrates
+// the interactive content
+const shellRoutes = ['/history', '/report', '/about'];
 
-for (const page of shellRoutes) {
-	app.get(page.path, async (_req, res) => {
+for (const path of shellRoutes) {
+	app.get(path, async (_req, res) => {
 		res.type('html').send(
 			renderPage(await getShellHtml(), {
-				metadata: await renderPageMetadata(page.path, 'Unknown', undefined, seoSiteUrl),
-				markup: await renderPageContent(page.heading, page.description)
+				metadata: await renderPageMetadata(path, 'Unknown', undefined, seoSiteUrl),
+				markup: await renderPageContent(path)
 			})
 		);
 	});

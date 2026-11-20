@@ -1,22 +1,7 @@
 import { statusHistory } from './history.js';
 import { getDailyWeather, localToday, shiftDate, type DayWeather } from './weather.js';
 import { logWarn } from './logger.js';
-
-export type ReopeningEstimate = {
-	available: true;
-	/** first day the trails are expected to be dry enough, YYYY-MM-DD; null when not within the forecast */
-	estimatedDate: string | null;
-	/** when the current closure began (ISO timestamp from the status history) */
-	closedSince: string;
-	/** inches of rain since the closure, through today */
-	rainInches: number;
-	/** days since the closure with at least 6 hours of sunshine */
-	sunnyDays: number;
-	/** warmest daily high (°F) since the closure, null when unknown */
-	highTempF: number | null;
-};
-
-export type ReopeningUnavailable = { available: false };
+import type { ReopeningEstimate, ReopeningUnavailable } from './shared-types.js';
 
 /**
  * Drying model, v1. A running "wetness" score in inches of rain:

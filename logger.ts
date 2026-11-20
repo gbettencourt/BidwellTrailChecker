@@ -1,4 +1,5 @@
 import { format } from 'node:util';
+import type { LogEntry, LogLevel } from './shared-types.js';
 
 /**
  * In-memory log of app events for the admin live tail view.
@@ -11,15 +12,6 @@ import { format } from 'node:util';
  * HTTP request logs are NOT captured here — express-winston logs those
  * separately, and they'd flood the tail with a line per page load.
  */
-
-export type LogLevel = 'info' | 'warn' | 'error';
-
-export type LogEntry = {
-	id: number;
-	ts: string;
-	level: LogLevel;
-	message: string;
-};
 
 const MAX_ENTRIES = 1000;
 const entries: LogEntry[] = [];

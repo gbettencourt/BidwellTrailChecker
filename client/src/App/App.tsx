@@ -77,9 +77,9 @@ type LayoutProps = {
 
 // header nav: Map, History, Report, About. On small screens the inline links
 // collapse into a hamburger menu so the title and GitHub link keep room.
-const NAV_ITEMS = [
-	{ label: 'Map', to: '/map' },
-	{ label: 'History', to: '/history' },
+const NAV_ITEMS: { label: string; to: string; icon?: ReactNode }[] = [
+	{ label: 'Map', to: '/map', icon: <MapOutlined /> },
+	{ label: 'History', to: '/history', icon: <HistoryIcon /> },
 	{ label: 'Report', to: '/report' },
 	{ label: 'About', to: '/about' }
 ];
@@ -123,18 +123,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 							</Typography>
 						</Box>
 						<Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center' }}>
-							<Button component={RouterLink} to="/map" color="inherit" startIcon={<MapOutlined />} sx={{ minWidth: 0 }}>
-								Map
-							</Button>
-							<Button component={RouterLink} to="/history" color="inherit" startIcon={<HistoryIcon />} sx={{ minWidth: 0 }}>
-								History
-							</Button>
-							<Button component={RouterLink} to="/report" color="inherit" sx={{ minWidth: 0 }}>
-								Report
-							</Button>
-							<Button component={RouterLink} to="/about" color="inherit" sx={{ minWidth: 0 }}>
-								About
-							</Button>
+							{NAV_ITEMS.map(({ label, to, icon }) => (
+								<Button key={to} component={RouterLink} to={to} color="inherit" startIcon={icon} sx={{ minWidth: 0 }}>
+									{label}
+								</Button>
+							))}
 						</Box>
 						<IconButton
 							aria-label="Menu"

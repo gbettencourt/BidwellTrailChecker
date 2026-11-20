@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import type { TrailDifficulty } from '../data/trailInfo';
+import { formatMiles } from '../data/trailGeometry';
 
 export type ElevationPoint = { d: number; e: number };
 
@@ -36,7 +37,7 @@ const ElevationProfile: React.FC<{
 }> = ({ name, distanceMi, difficulty, elevation, onClose }) => {
 	const stats = [
 		{ label: 'Difficulty', value: difficulty ?? '—', dot: difficulty ? difficultyColor(difficulty) : undefined },
-		{ label: 'Distance', value: `${distanceMi >= 1 ? distanceMi.toFixed(1) : distanceMi.toFixed(2)} mi` },
+		{ label: 'Distance', value: formatMiles(distanceMi) },
 		{ label: 'Elevation gain', value: elevation ? `↑${elevation.gainFt.toLocaleString()} ft` : '—' },
 		{ label: 'Elevation loss', value: elevation ? `↓${elevation.lossFt.toLocaleString()} ft` : '—' },
 		{ label: 'High / low', value: elevation ? `${elevation.maxFt.toLocaleString()} / ${elevation.minFt.toLocaleString()} ft` : '—' }

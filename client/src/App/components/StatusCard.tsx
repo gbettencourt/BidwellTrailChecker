@@ -4,7 +4,9 @@ import DoNotDisturbOnRounded from '@mui/icons-material/DoNotDisturbOnRounded';
 import HelpRounded from '@mui/icons-material/HelpRounded';
 import { Box, Link, Paper, Skeleton, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { formatDuration } from '../util/Util';
+import { DAY_MS, formatDuration } from '../util/Util';
+import { formatDateLocal } from '../../../../shared/format-date-local.js';
+import type { ReopeningEstimate, ReopeningUnavailable } from '../../../../shared-types.js';
 
 interface StatusCardProps {
 	status: string;
@@ -17,28 +19,16 @@ interface StatusCardProps {
 
 const sinceFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
 
-// shape of GET /api/reopening when the trails are closed and an estimate exists
-type ReopeningEstimate = {
-	available: boolean;
-	estimatedDate?: string | null;
-	closedSince?: string;
-	rainInches?: number;
-	sunnyDays?: number;
-	highTempF?: number | null;
-};
-
 // a YYYY-MM-DD date parsed as local noon, so formatting it in
 // America/Los_Angeles never lands on the neighboring day
 const localNoon = (date: string) => new Date(`${date}T12:00:00`);
 
-const todayLocal = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
-
 // the drying model is a rough guess, so the card shows a vague window
 // instead of an exact date — a specific day would imply more precision
 // than the model has
-const vagueEtaText = (etaDate: string | null, today = todayLocal()): string => {
+const vagueEtaText = (etaDate: string | null, today = formatDateLocal(new Date())): string => {
 	if (etaDate === null) return 'More than a week away';
-	const days = Math.round((localNoon(etaDate).getTime() - localNoon(today).getTime()) / 86400000);
+	const days = Math.round((localNoon(etaDate).getTime() - localNoon(today).getTime()) / DAY_MS);
 	if (days <= 0) return 'Today';
 	if (days === 1) return 'Tomorrow';
 	if (days <= 3) return 'In 2–3 days';
@@ -81,7 +71,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 		setEtaLoading(true);
 		fetch('/api/reopening')
 			.then((res) => (res.ok ? res.json() : null))
-			.then((data: ReopeningEstimate | null) => {
+			.then((data: ReopeningEstimate | ReopeningUnavailable | null) => {
 				if (!cancelled) setEstimate(data?.available ? data : null);
 			})
 			.catch(() => {})
@@ -96,14 +86,12 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 	const etaDate = estimate?.estimatedDate ?? null;
 	const etaText = vagueEtaText(etaDate);
 	const etaParts: string[] = [];
-	if (estimate && estimate.rainInches !== undefined && estimate.closedSince) {
+	if (estimate) {
 		etaParts.push(`${estimate.rainInches} in of rain since ${sinceFormat.format(new Date(estimate.closedSince))}`);
-	}
-	if (estimate?.sunnyDays !== undefined) {
 		etaParts.push(`${estimate.sunnyDays} sunny day${estimate.sunnyDays === 1 ? '' : 's'}`);
-	}
-	if (estimate?.highTempF !== undefined && estimate.highTempF !== null) {
-		etaParts.push(`highs near ${Math.round(estimate.highTempF)}°`);
+		if (estimate.highTempF !== null) {
+			etaParts.push(`highs near ${Math.round(estimate.highTempF)}°`);
+		}
 	}
 
 	return (

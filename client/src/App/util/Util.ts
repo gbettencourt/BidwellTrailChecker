@@ -39,6 +39,12 @@ export const extractEmailAddress = (address: string): string => {
   return match ? match[1].trim() : address.trim();
 };
 
+// one email pattern for the signup, report, and unsubscribe forms
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// milliseconds in a day, for the status card and history page
+export const DAY_MS = 24 * 60 * 60 * 1000;
+
 export const TRAIL_PAGE_URL =
   "https://chico.ca.us/Our-Community/Parks-Recreation-and-Experience-the-Outdoors/Park-Trails/Trail-Gate--Facility-Status-and-Hours/index.html";
 
@@ -50,17 +56,4 @@ export const formatDuration = (ms: number): string => {
   if (hours < 48) return `${hours} hour${hours === 1 ? "" : "s"}`;
   const days = Math.round(hours / 24);
   return `${days} days`;
-};
-
-export type StatusEvent = {
-  status: "Open" | "Closed";
-  at: string;
-  source: "auto" | "manual" | "email";
-};
-
-export type StatusHistory = {
-  current: StatusEvent | null;
-  trackedSince: string | null;
-  stats: { avgClosureMs: number | null; closuresLast90Days: number };
-  events: StatusEvent[];
 };

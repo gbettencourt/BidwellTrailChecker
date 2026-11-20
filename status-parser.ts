@@ -1,5 +1,5 @@
 import { parse } from 'node-html-parser';
-import type { TrailStatus } from './history.js';
+import type { TrailStatus } from './shared-types.js';
 
 export type ParseResult = { status: TrailStatus } | { error: string };
 

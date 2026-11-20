@@ -1,11 +1,15 @@
 import type { User } from './db.js';
 import { unsubscribePageUrl } from './unsubscribe.js';
+import { escapeHtml } from './shared/escape-html.js';
 
 export type Email = { subject: string; html: string; text: string };
 
 const COLORS = { Open: '#2e8b57', Closed: '#c0392b', Unknown: '#5f6b66' };
 
-const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+// the status comes from the city's page, not from a live sensor — say so in
+// both the HTML mail and the plain-text footer
+const LAG_NOTE =
+	"Status comes from the City of Chico's trail page and may lag behind. Always check the signs at the trailhead before you ride.";
 
 /**
  * Shared layout: plain table markup with inline styles, which is what email clients render reliably.
@@ -36,7 +40,7 @@ function layout({ status, heading, paragraphs, user }: { status: string; heading
 			<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0 8px;"><tr><td style="background:#2f6b4f;border-radius:10px;">
 				<a href="${appUrl}" style="display:inline-block;padding:12px 20px;color:#ffffff;font-weight:600;font-size:15px;text-decoration:none;">View trail status &amp; map</a>
 			</td></tr></table>
-			<p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#5f6b66;">Status comes from the City of Chico's trail page and may lag behind. Always check the signs at the trailhead before you ride.</p>
+			<p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#5f6b66;">${LAG_NOTE}</p>
 		</td></tr>
 		${footer}
 	</table>
@@ -47,7 +51,7 @@ function layout({ status, heading, paragraphs, user }: { status: string; heading
 }
 
 const textFooter = (user: User) =>
-	`Status comes from the City of Chico's trail page and may lag behind. Always check the signs at the trailhead before you ride.
+	`${LAG_NOTE}
 
 View trail status & map: ${process.env.APP_URL}
 

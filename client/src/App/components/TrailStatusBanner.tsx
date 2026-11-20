@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Button } from '@mui/material';
+import type { TrailStatus } from '../../../../shared-types.js';
 
-export type TrailStatus = 'Open' | 'Closed';
 export type TrailStatusState = 'loading' | TrailStatus | 'unknown';
 
 type TrailStatusBannerProps = {

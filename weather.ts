@@ -17,6 +17,8 @@ export type DayWeather = {
 	maxTempF: number | null;
 };
 
+import { formatDateLocal } from './shared/format-date-local.js';
+
 const LAT = 39.7285;
 const LON = -121.8375;
 const TIMEZONE = 'America/Los_Angeles';
@@ -30,14 +32,14 @@ const cache = new Map<string, CachedSeries>();
 
 /** Today in Chico, YYYY-MM-DD. */
 export function localToday(): string {
-	return new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE });
+	return formatDateLocal(new Date());
 }
 
 /** Shift a YYYY-MM-DD date by a number of days, returning YYYY-MM-DD. */
 export function shiftDate(date: string, days: number): string {
 	const d = new Date(`${date}T12:00:00`);
 	d.setDate(d.getDate() + days);
-	return d.toLocaleDateString('en-CA', { timeZone: TIMEZONE });
+	return formatDateLocal(d);
 }
 
 // Open-Meteo returns parallel arrays under `daily`; values can be null

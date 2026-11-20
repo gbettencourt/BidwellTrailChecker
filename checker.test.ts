@@ -194,18 +194,19 @@ describe('checker', () => {
 		expect(sent[0].headers!['List-Unsubscribe']!).toMatch(/u=1&t=/);
 	});
 	test('getTransporter uses Gmail without SMTP_HOST and SMTP with a host', () => {
-		const checker = new CheckerClass(false);
+		// getTransporter reuses one transporter per Checker, so each case
+		// needs a fresh instance to see the new env
 		delete process.env.SMTP_HOST;
-		const gmail = checker.getTransporter() as any;
+		const gmail = new CheckerClass(false).getTransporter() as any;
 		expect(gmail.options.service).toBe('Gmail');
 		process.env.SMTP_HOST = 'smtp.example';
 		process.env.SMTP_PORT = '465';
-		const smtps = checker.getTransporter() as any;
+		const smtps = new CheckerClass(false).getTransporter() as any;
 		expect(smtps.options.host).toBe('smtp.example');
 		expect(smtps.options.port).toBe(465);
 		expect(smtps.options.secure).toBe(true);
 		process.env.SMTP_PORT = '587';
-		const smtp = checker.getTransporter() as any;
+		const smtp = new CheckerClass(false).getTransporter() as any;
 		expect(smtp.options.secure).toBe(false);
 		delete process.env.SMTP_HOST;
 		delete process.env.SMTP_PORT;
