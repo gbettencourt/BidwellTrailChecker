@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import fs from 'node:fs';
@@ -107,6 +107,18 @@ describe('admin-router', () => {
 			headers: { 'Content-Type': 'application/json', ...headers },
 			body: JSON.stringify(body)
 		});
+	// the lockout is global, so every lockout test leaves it clear for the
+	// next test by moving time past the lock and logging in
+	const clearLockout = async () => {
+		const realNow = Date.now();
+		const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(realNow + 16 * 60 * 1000);
+		try {
+			const res = await postJson(`${baseUrl}/login`, { password: 'testpass123' });
+			expect(res.status).toBe(200);
+		} finally {
+			nowSpy.mockRestore();
+		}
+	};
 	test('login rejects a wrong password', async () => {
 		const res = await postJson(`${baseUrl}/login`, { password: 'nope' });
 		expect(res.status).toBe(401);
@@ -207,5 +219,50 @@ describe('admin-router', () => {
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ ok: true });
 		expect(fetchStatusCalls.length).toBe(1);
+	});
+	test('login locks out after five failures', async () => {
+		for (let i = 0; i < 5; i++) {
+			const res = await postJson(`${baseUrl}/login`, { password: 'nope' });
+			expect(res.status).toBe(401);
+		}
+		// even the right password is refused while locked
+		const locked = await postJson(`${baseUrl}/login`, { password: 'testpass123' });
+		expect(locked.status).toBe(429);
+		expect(locked.headers.get('retry-after')).toBeTruthy();
+		expect(await locked.json()).toEqual({ error: 'Too many login attempts, try again later' });
+		await clearLockout();
+	});
+	test('a successful login resets the failure count', async () => {
+		for (let i = 0; i < 4; i++) {
+			const res = await postJson(`${baseUrl}/login`, { password: 'nope' });
+			expect(res.status).toBe(401);
+		}
+		const good = await postJson(`${baseUrl}/login`, { password: 'testpass123' });
+		expect(good.status).toBe(200);
+		// four more failures after the reset are still just 401s
+		for (let i = 0; i < 5; i++) {
+			const res = await postJson(`${baseUrl}/login`, { password: 'nope' });
+			expect(res.status).toBe(401);
+		}
+		const locked = await postJson(`${baseUrl}/login`, { password: 'testpass123' });
+		expect(locked.status).toBe(429);
+		await clearLockout();
+	});
+	test('the login lockout expires after fifteen minutes', async () => {
+		for (let i = 0; i < 5; i++) {
+			const res = await postJson(`${baseUrl}/login`, { password: 'nope' });
+			expect(res.status).toBe(401);
+		}
+		const locked = await postJson(`${baseUrl}/login`, { password: 'testpass123' });
+		expect(locked.status).toBe(429);
+		// sixteen minutes later the lock is gone and the right password works
+		const realNow = Date.now();
+		const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(realNow + 16 * 60 * 1000);
+		try {
+			const res = await postJson(`${baseUrl}/login`, { password: 'testpass123' });
+			expect(res.status).toBe(200);
+		} finally {
+			nowSpy.mockRestore();
+		}
 	});
 });

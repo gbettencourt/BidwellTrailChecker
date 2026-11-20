@@ -57,18 +57,47 @@ function adminAuthMiddleware(req: express.Request, res: express.Response, next: 
 	next();
 }
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+
+let failedLoginAttempts = 0;
+let loginLockedUntil: number | null = null;
+
+function recordFailedLogin(ip: string) {
+	failedLoginAttempts += 1;
+	if (failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+		loginLockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
+		logError(`Admin login locked out from ${ip} after ${MAX_LOGIN_ATTEMPTS} failures`);
+	}
+}
+
 /**
  * ===== LOGIN =====
  */
 router.post('/login', (req, res) => {
 	const { password } = req.body;
+	const ip = req.ip ?? 'unknown';
+
+	if (loginLockedUntil !== null) {
+		if (Date.now() >= loginLockedUntil) {
+			// the lock expired — the next failure starts a fresh count
+			loginLockedUntil = null;
+			failedLoginAttempts = 0;
+		} else {
+			res.set('Retry-After', String(Math.ceil((loginLockedUntil - Date.now()) / 1000)));
+			return res.status(429).json({ error: 'Too many login attempts, try again later' });
+		}
+	}
 
 	if (password !== ADMIN_PASSWORD) {
-		logError(`Admin login failed from ${req.ip}`);
+		logError(`Admin login failed from ${ip}`);
+		recordFailedLogin(ip);
 		return res.status(401).json({ error: 'Invalid password' });
 	}
 
-	logInfo(`Admin login succeeded from ${req.ip}`);
+	failedLoginAttempts = 0;
+	loginLockedUntil = null;
+	logInfo(`Admin login succeeded from ${ip}`);
 	const token = createToken();
 	res.json({ token });
 });
