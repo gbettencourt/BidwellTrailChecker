@@ -18,6 +18,7 @@ import {
 	type Trails
 } from '../data/trailGeometry';
 import ElevationProfile, { type TrailElevation } from '../components/ElevationProfile';
+import { apiGet } from '../util/api';
 import type { TrailStatusState } from '../components/TrailStatusBanner';
 
 const ALWAYS_OPEN_COLOR = '#1f9d55';
@@ -96,24 +97,16 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 	const layersRef = useRef(new Map<string, L.Layer>());
 
 	useEffect(() => {
-		fetch('/trails.geojson')
-			.then((res) => {
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				return res.json();
-			})
-			.then((data: Trails) => setTrails(withLocalInfo(data)))
+		apiGet<Trails>('/trails.geojson')
+			.then((data) => setTrails(withLocalInfo(data)))
 			.catch((e) => {
 				console.error('Failed to load trails:', e);
 				setError(true);
 			});
 		// precomputed elevations (scripts/compute-trail-elevations.mjs);
 		// the map still works without them, just without profiles
-		fetch('/trail-elevations.json')
-			.then((res) => {
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				return res.json();
-			})
-			.then((data: { trails: Record<string, TrailElevation> }) => setElevations(data.trails))
+		apiGet<{ trails: Record<string, TrailElevation> }>('/trail-elevations.json')
+			.then((data) => setElevations(data.trails))
 			.catch((e) => console.error('Failed to load trail elevations:', e));
 	}, []);
 

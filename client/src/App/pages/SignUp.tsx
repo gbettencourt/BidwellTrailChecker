@@ -5,6 +5,8 @@ import { Alert, Box, Button, Collapse, FormControlLabel, Link, Paper, Stack, Swi
 import { useForm } from 'react-hook-form';
 import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/CaptchaField';
 import { StatusCard } from '../components/StatusCard';
+import { useTrailStatus } from '../hooks/useTrailStatus';
+import { apiGet } from '../util/api';
 import { cleanPhoneNumber, extractEmailAddress, formatPhoneNumber, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
 import type { AppInitialData } from '../app-data';
 
@@ -18,9 +20,7 @@ interface FormValues {
 export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData }) => {
 	const [isRegistered, setIsRegistered] = useState(false);
 	const [regError, setRegError] = useState('');
-	const [trailStatus, setTrailStatus] = useState(initialData?.trailStatus ?? '');
-	const [lastCheckTime, setLastCheckTime] = useState(initialData?.lastCheck ?? '');
-	const [statusLoading, setStatusLoading] = useState(!initialData);
+	const { status: trailStatus, lastCheck: lastCheckTime, loading: statusLoading } = useTrailStatus(initialData);
 	const [statusSince, setStatusSince] = useState<StatusEvent | null>(initialData?.statusSince ?? null);
 	const [now, setNow] = useState(initialData?.renderedAt ?? Date.now());
 	const captcha = useCaptcha(initialData?.captchaCode);
@@ -47,24 +47,8 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 	useEffect(() => {
 		setNow(Date.now());
 
-		const fetchTrailStatus = async () => {
-			try {
-				const res = await fetch('/api/trailstatus');
-				const status = await res.json();
-				setTrailStatus(status.trailStatus);
-				setLastCheckTime(status.lastCheck);
-			} catch (error) {
-				console.error('Failed to fetch trail status:', error);
-			} finally {
-				setStatusLoading(false);
-			}
-		};
-
-		fetchTrailStatus();
-
-		fetch('/api/statushistory')
-			.then((res) => res.json())
-			.then((history: StatusHistory) => setStatusSince(history.current))
+		apiGet<StatusHistory>('/api/statushistory')
+			.then((history) => setStatusSince(history.current))
 			.catch((error) => console.error('Failed to fetch status history:', error));
 	}, []);
 

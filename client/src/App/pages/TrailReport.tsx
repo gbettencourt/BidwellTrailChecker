@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/CaptchaField';
-import { TrailStatusBanner, type TrailStatusState } from '../components/TrailStatusBanner';
+import { TrailStatusBanner } from '../components/TrailStatusBanner';
+import { useTrailStatus } from '../hooks/useTrailStatus';
 
 type ReportType = 'status' | 'issue';
 
@@ -20,25 +21,9 @@ interface FormValues {
 export const TrailReportPage: React.FC = () => {
 	const [submitted, setSubmitted] = useState(false);
 	const [submitError, setSubmitError] = useState('');
-	const [status, setStatus] = useState<TrailStatusState>('loading');
-	const captcha = useCaptcha();
-
 	// what the site currently shows, so a reporter can compare it with the signs
-	const fetchStatus = useCallback(async () => {
-		try {
-			const res = await fetch('/api/trailstatus');
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const data = await res.json();
-			setStatus(data.trailStatus === 'Open' || data.trailStatus === 'Closed' ? data.trailStatus : 'unknown');
-		} catch (e) {
-			console.error('Failed to fetch trail status:', e);
-			setStatus('unknown');
-		}
-	}, []);
-
-	useEffect(() => {
-		fetchStatus();
-	}, [fetchStatus]);
+	const { status, retry: fetchStatus } = useTrailStatus();
+	const captcha = useCaptcha();
 
 	const {
 		register,
