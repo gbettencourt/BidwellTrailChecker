@@ -57,15 +57,6 @@ function adminAuthMiddleware(req: express.Request, res: express.Response, next: 
 	next();
 }
 
-/**
- * ===== LOGIN RATE LIMIT =====
- * The admin password is a single shared secret, so the login endpoint is
- * the obvious brute-force target. Five failed logins from one IP lock that
- * IP out for fifteen minutes; a successful login clears the record. No
- * dependency — this is a small in-memory map, and the admin logs in rarely.
- * The app runs behind Caddy with trust proxy set, so req.ip is the real
- * client IP, not the proxy's.
- */
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
 
