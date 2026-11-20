@@ -57,32 +57,28 @@ function adminAuthMiddleware(req: express.Request, res: express.Response, next: 
 	next();
 }
 
+/**
+ * ===== LOGIN RATE LIMIT =====
+ * The admin password is a single shared secret, so the login endpoint is
+ * the obvious brute-force target. Five failed logins lock the endpoint for
+ * fifteen minutes; a successful login clears the count, and an expired
+ * lock clears itself so the next failure starts a fresh count. One global
+ * lock, not per IP — the admin logs in rarely, so simple beats tracking
+ * addresses. The trade-off: an attacker can lock the admin out by failing
+ * five times, and a restart clears it.
+ */
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
 
-type LoginAttempts = { failures: number; lockedUntil: number | null };
-const loginAttempts = new Map<string, LoginAttempts>();
-
-// the lock timestamp for this IP, or null when it can try again — an
-// expired lock is cleared so the next failure starts a fresh count
-function loginLockedUntil(ip: string): number | null {
-	const record = loginAttempts.get(ip);
-	if (!record) return null;
-	if (record.lockedUntil !== null && Date.now() >= record.lockedUntil) {
-		loginAttempts.delete(ip);
-		return null;
-	}
-	return record.lockedUntil;
-}
+let failedLoginAttempts = 0;
+let loginLockedUntil: number | null = null;
 
 function recordFailedLogin(ip: string) {
-	const record = loginAttempts.get(ip) ?? { failures: 0, lockedUntil: null };
-	record.failures += 1;
-	if (record.failures >= MAX_LOGIN_ATTEMPTS) {
-		record.lockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
+	failedLoginAttempts += 1;
+	if (failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+		loginLockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
 		logError(`Admin login locked out from ${ip} after ${MAX_LOGIN_ATTEMPTS} failures`);
 	}
-	loginAttempts.set(ip, record);
 }
 
 /**
@@ -92,10 +88,15 @@ router.post('/login', (req, res) => {
 	const { password } = req.body;
 	const ip = req.ip ?? 'unknown';
 
-	const lockedUntil = loginLockedUntil(ip);
-	if (lockedUntil !== null) {
-		res.set('Retry-After', String(Math.ceil((lockedUntil - Date.now()) / 1000)));
-		return res.status(429).json({ error: 'Too many login attempts, try again later' });
+	if (loginLockedUntil !== null) {
+		if (Date.now() >= loginLockedUntil) {
+			// the lock expired — the next failure starts a fresh count
+			loginLockedUntil = null;
+			failedLoginAttempts = 0;
+		} else {
+			res.set('Retry-After', String(Math.ceil((loginLockedUntil - Date.now()) / 1000)));
+			return res.status(429).json({ error: 'Too many login attempts, try again later' });
+		}
 	}
 
 	if (password !== ADMIN_PASSWORD) {
@@ -104,7 +105,8 @@ router.post('/login', (req, res) => {
 		return res.status(401).json({ error: 'Invalid password' });
 	}
 
-	loginAttempts.delete(ip);
+	failedLoginAttempts = 0;
+	loginLockedUntil = null;
 	logInfo(`Admin login succeeded from ${ip}`);
 	const token = createToken();
 	res.json({ token });
