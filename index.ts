@@ -50,86 +50,77 @@ app.use(
 	})
 );
 
-app.get('/', async (_req, res) => {
-	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
+// the client shell never changes while the server runs; read it once and
+// reuse it instead of reading the same file on every page request
+let shellHtml: string | null = null;
+async function getShellHtml(): Promise<string> {
+	if (shellHtml === null) {
+		shellHtml = await readFile(join(__dirname, 'client/build/index.html'), 'utf-8');
+	}
+	return shellHtml;
+}
+
+// the server-seeded data for the two full-SSR routes; only the homepage
+// also names the address alerts come from
+async function buildInitialData(includeEmail: boolean) {
 	const status = checker.currentStatus();
 	const history = await statusHistory();
-	const initialData = {
+	return {
 		trailStatus: status.trailStatus,
 		lastCheck: status.lastCheck.toISOString(),
 		statusSince: history.current,
 		captchaCode: randomInt(1000, 9999),
 		renderedAt: Date.now(),
 		siteUrl: seoSiteUrl,
-		notificationFromEmail: process.env.SMTP_FROM_EMAIL || undefined
+		...(includeEmail ? { notificationFromEmail: process.env.SMTP_FROM_EMAIL || undefined } : {})
 	};
-	const renderedApp = await renderApp('/', initialData);
-	res.type('html').send(renderPage(html, { ...renderedApp, initialData }));
-});
+}
 
-app.get('/map', async (_req, res) => {
-	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	// same server-seeded status as the homepage, so the map banner is in
-	// the first HTML instead of appearing only after a client fetch
-	const status = checker.currentStatus();
-	const history = await statusHistory();
-	const initialData = {
-		trailStatus: status.trailStatus,
-		lastCheck: status.lastCheck.toISOString(),
-		statusSince: history.current,
-		captchaCode: randomInt(1000, 9999),
-		renderedAt: Date.now(),
-		siteUrl: seoSiteUrl
+// the two full-SSR routes render the whole React app on the server;
+// everything else serves the shell and lets the client hydrate
+function serveApp(path: string, includeEmail: boolean) {
+	return async (_req: Request, res: Response) => {
+		const initialData = await buildInitialData(includeEmail);
+		const renderedApp = await renderApp(path, initialData);
+		res.type('html').send(renderPage(await getShellHtml(), { ...renderedApp, initialData }));
 	};
-	const renderedApp = await renderApp('/map', initialData);
-	res.type('html').send(renderPage(html, { ...renderedApp, initialData }));
-});
+}
 
-app.get('/history', async (_req, res) => {
-	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	const page = {
-		title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
-		description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.',
-		heading: 'Upper Bidwell Park trail status history'
-	};
-	res.type('html').send(
-		renderPage(html, {
-			metadata: await renderPageMetadata('/history', 'Unknown', undefined, seoSiteUrl),
-			markup: await renderPageContent(page.heading, page.description)
-		})
-	);
-});
+app.get('/', serveApp('/', true));
+// same server-seeded status as the homepage, so the map banner is in
+// the first HTML instead of appearing only after a client fetch
+app.get('/map', serveApp('/map', false));
 
-app.get('/report', async (_req, res) => {
-	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	const page = {
-		title: 'Report Trail Status or Issue | Bidwell Trail Checker',
-		description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.',
-		heading: 'Report a trail status or issue'
-	};
-	res.type('html').send(
-		renderPage(html, {
-			metadata: await renderPageMetadata('/report', 'Unknown', undefined, seoSiteUrl),
-			markup: await renderPageContent(page.heading, page.description)
-		})
-	);
-});
+// these pages render only a heading + description on the server; the
+// React app hydrates the interactive content
+const shellRoutes = [
+	{
+		path: '/history',
+		heading: 'Upper Bidwell Park trail status history',
+		description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.'
+	},
+	{
+		path: '/report',
+		heading: 'Report a trail status or issue',
+		description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.'
+	},
+	{
+		path: '/about',
+		heading: 'About Bidwell Trail Checker',
+		description: 'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.'
+	}
+];
 
-app.get('/about', async (_req, res) => {
-	const html = await readFile(join(__dirname, '/client/build/index.html'), 'utf8');
-	const page = {
-		title: 'About | Bidwell Trail Checker',
-		description:
-			'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.',
-		heading: 'About Bidwell Trail Checker'
-	};
-	res.type('html').send(
-		renderPage(html, {
-			metadata: await renderPageMetadata('/about', 'Unknown', undefined, seoSiteUrl),
-			markup: await renderPageContent(page.heading, page.description)
-		})
-	);
-});
+for (const page of shellRoutes) {
+	app.get(page.path, async (_req, res) => {
+		res.type('html').send(
+			renderPage(await getShellHtml(), {
+				metadata: await renderPageMetadata(page.path, 'Unknown', undefined, seoSiteUrl),
+				markup: await renderPageContent(page.heading, page.description)
+			})
+		);
+	});
+}
 
 // Serve the static files from the React app
 app.use(express.static(join(__dirname, '/client/build')));
