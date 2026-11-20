@@ -15,13 +15,7 @@ export type TrailInfo = {
 // map (https://explore-butte.files.svdcdn.com/production/documents/upper-bidwell-park-trails-map-web.pdf);
 // the rest are Gary's own ratings (2026-11-14) for the local names the
 // City map doesn't cover.
-export type TrailDifficulty =
-	| 'Easy'
-	| 'Easy to Moderate'
-	| 'Moderate'
-	| 'Moderate to Difficult'
-	| 'Difficult'
-	| 'Easy to Difficult';
+export type TrailDifficulty = 'Easy' | 'Easy to Moderate' | 'Moderate' | 'Moderate to Difficult' | 'Difficult' | 'Easy to Difficult';
 
 export const TRAIL_DIFFICULTY: Record<string, TrailDifficulty> = {
 	'Annie Bidwell Trail': 'Easy to Difficult',

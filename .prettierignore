@@ -1,0 +1,11 @@
+dist
+client/build
+client/build-ssr
+db.json
+history.json
+trailOverride.json
+package-lock.json
+client/package-lock.json
+client/public/trails.geojson
+client/public/trail-elevations.json
+.github

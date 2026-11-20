@@ -11,12 +11,7 @@ export const haversineAngle = (lon1: number, lat1: number, lon2: number, lat2: n
 	const toRad = (d: number) => (d * Math.PI) / 180;
 	const dLat = toRad(lat2 - lat1);
 	const dLon = toRad(lon2 - lon1);
-	return (
-		2 *
-		Math.asin(
-			Math.sqrt(Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2)
-		)
-	);
+	return 2 * Math.asin(Math.sqrt(Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2));
 };
 
 export const haversineMi = (lon1: number, lat1: number, lon2: number, lat2: number): number =>

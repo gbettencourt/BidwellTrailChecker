@@ -44,7 +44,7 @@ const fakeTransporter = {
 
 function stubbedChecker() {
 	const checker = new CheckerClass(false);
-	(checker as any).getTransporter = () => fakeTransporter;
+	(checker as unknown as { getTransporter: () => unknown }).getTransporter = () => fakeTransporter;
 	return checker;
 }
 
@@ -186,7 +186,7 @@ describe('checker', () => {
 	test('sendStatusEmail uses the given transporter and adds one-click unsubscribe headers', async () => {
 		const checker = stubbedChecker();
 		const user: User = { id: 1, email: 'a@example.com', phone: '' };
-		const info = await checker.sendStatusEmail('Closed', user, fakeTransporter as any);
+		const info = await checker.sendStatusEmail('Closed', user, fakeTransporter as unknown as Parameters<Checker['sendStatusEmail']>[2]);
 		expect(info.messageId).toBe('fake-1');
 		expect(sent.length).toBe(1);
 		expect(sent[0].to).toBe('a@example.com');
@@ -197,16 +197,22 @@ describe('checker', () => {
 		// getTransporter reuses one transporter per Checker, so each case
 		// needs a fresh instance to see the new env
 		delete process.env.SMTP_HOST;
-		const gmail = new CheckerClass(false).getTransporter() as any;
+		const gmail = new CheckerClass(false).getTransporter() as unknown as {
+			options: { service?: string; host?: string; port?: number; secure?: boolean };
+		};
 		expect(gmail.options.service).toBe('Gmail');
 		process.env.SMTP_HOST = 'smtp.example';
 		process.env.SMTP_PORT = '465';
-		const smtps = new CheckerClass(false).getTransporter() as any;
+		const smtps = new CheckerClass(false).getTransporter() as unknown as {
+			options: { service?: string; host?: string; port?: number; secure?: boolean };
+		};
 		expect(smtps.options.host).toBe('smtp.example');
 		expect(smtps.options.port).toBe(465);
 		expect(smtps.options.secure).toBe(true);
 		process.env.SMTP_PORT = '587';
-		const smtp = new CheckerClass(false).getTransporter() as any;
+		const smtp = new CheckerClass(false).getTransporter() as unknown as {
+			options: { service?: string; host?: string; port?: number; secure?: boolean };
+		};
 		expect(smtp.options.secure).toBe(false);
 		delete process.env.SMTP_HOST;
 		delete process.env.SMTP_PORT;
@@ -247,7 +253,7 @@ describe('checker', () => {
 	});
 	test('sendMail never rejects when sending fails', async () => {
 		const checker = stubbedChecker();
-		(checker as any).getTransporter = () => ({
+		(checker as unknown as { getTransporter: () => unknown }).getTransporter = () => ({
 			sendMail: async () => {
 				throw new Error('SMTP down');
 			}

@@ -4,7 +4,21 @@ import HistoryIcon from '@mui/icons-material/History';
 import MenuIcon from '@mui/icons-material/Menu';
 import BikeIcon from '@mui/icons-material/DirectionsBike';
 import MapOutlined from '@mui/icons-material/MapOutlined';
-import { AppBar, Toolbar, IconButton, Typography, Box, Button, Container, CssBaseline, Link, Menu, MenuItem, Skeleton, Stack } from '@mui/material';
+import {
+	AppBar,
+	Toolbar,
+	IconButton,
+	Typography,
+	Box,
+	Button,
+	Container,
+	CssBaseline,
+	Link,
+	Menu,
+	MenuItem,
+	Skeleton,
+	Stack
+} from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { Route, Routes, BrowserRouter, MemoryRouter, Link as RouterLink, useLocation } from 'react-router-dom';
 import { SignUp } from './pages/SignUp';
@@ -105,7 +119,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 						<Box
 							component={RouterLink}
 							to="/"
-							sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexGrow: 1, color: 'text.primary', textDecoration: 'none' }}>
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 1.25,
+								flexGrow: 1,
+								color: 'text.primary',
+								textDecoration: 'none'
+							}}>
 							<Box
 								sx={{
 									width: 36,
@@ -145,7 +166,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 								</MenuItem>
 							))}
 						</Menu>
-						<IconButton aria-label="GitHub repository" color="inherit" href="https://github.com/gbettencourt/BidwellTrailChecker">
+						<IconButton
+							aria-label="GitHub repository"
+							color="inherit"
+							href="https://github.com/gbettencourt/BidwellTrailChecker">
 							<GitHub />
 						</IconButton>
 					</Toolbar>
@@ -172,7 +196,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 							<Link component={RouterLink} to="/report" variant="body2" color="text.secondary" underline="hover">
 								Report a trail issue
 							</Link>
-							<Link href={TRAIL_PAGE_URL} target="_blank" rel="noopener" variant="body2" color="text.secondary" underline="hover">
+							<Link
+								href={TRAIL_PAGE_URL}
+								target="_blank"
+								rel="noopener"
+								variant="body2"
+								color="text.secondary"
+								underline="hover">
 								City trail page
 							</Link>
 						</Stack>

@@ -22,7 +22,10 @@ const MODE_LABELS: Record<OverrideValue, string> = {
 // admin API call with the login token attached; a 401 means the token is
 // stale, so sign out and reload to the login form. Returns null after a
 // 401, so callers bail out instead of reading a dead response.
-async function adminFetch(input: string, init?: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> }): Promise<Response | null> {
+async function adminFetch(
+	input: string,
+	init?: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> }
+): Promise<Response | null> {
 	const res = await fetch(input, {
 		...init,
 		headers: { ...init?.headers, Authorization: `Bearer ${localStorage.getItem('admin_token')}` }
@@ -200,7 +203,10 @@ function AdminControls() {
 				result: {
 					channel,
 					success: true,
-					message: channel === 'email' ? 'Test email sent to the configured admin email address.' : 'Test SMS sent to the configured admin account phone number.'
+					message:
+						channel === 'email'
+							? 'Test email sent to the configured admin email address.'
+							: 'Test SMS sent to the configured admin account phone number.'
 				}
 			});
 		} catch (error) {
@@ -225,7 +231,12 @@ function AdminControls() {
 						Trail control
 					</Typography>
 					<Typography color="text.secondary" sx={{ mt: 0.5 }}>
-						Current mode: {loading ? <Skeleton sx={{ display: 'inline-block' }} width={160} /> : <strong>{MODE_LABELS[savedOverride]}</strong>}
+						Current mode:{' '}
+						{loading ? (
+							<Skeleton sx={{ display: 'inline-block' }} width={160} />
+						) : (
+							<strong>{MODE_LABELS[savedOverride]}</strong>
+						)}
 					</Typography>
 				</Box>
 
@@ -241,7 +252,9 @@ function AdminControls() {
 							setSaved(false);
 						}
 					}}
-					sx={{ '& .MuiToggleButton-root': { flexDirection: 'column', gap: 0.5, py: 1.5, textTransform: 'none', fontWeight: 600 } }}>
+					sx={{
+						'& .MuiToggleButton-root': { flexDirection: 'column', gap: 0.5, py: 1.5, textTransform: 'none', fontWeight: 600 }
+					}}>
 					<ToggleButton value="auto">
 						<AutoModeRounded />
 						Auto
@@ -295,7 +308,11 @@ function AdminControls() {
 					{testNotification.result?.channel === 'email' && (
 						<Alert severity={testNotification.result.success ? 'success' : 'error'}>{testNotification.result.message}</Alert>
 					)}
-					<Button variant="outlined" size="large" onClick={() => sendTestNotification('email')} disabled={testNotification.sending !== null}>
+					<Button
+						variant="outlined"
+						size="large"
+						onClick={() => sendTestNotification('email')}
+						disabled={testNotification.sending !== null}>
 						{testNotification.sending === 'email' ? 'Sending…' : 'Send test email'}
 					</Button>
 				</Stack>
@@ -308,13 +325,18 @@ function AdminControls() {
 							Test SMS
 						</Typography>
 						<Typography color="text.secondary" sx={{ mt: 0.5 }}>
-							Send a sample text message to the phone number on the subscriber account matching the configured admin email address.
+							Send a sample text message to the phone number on the subscriber account matching the configured admin email
+							address.
 						</Typography>
 					</Box>
 					{testNotification.result?.channel === 'sms' && (
 						<Alert severity={testNotification.result.success ? 'success' : 'error'}>{testNotification.result.message}</Alert>
 					)}
-					<Button variant="outlined" size="large" onClick={() => sendTestNotification('sms')} disabled={testNotification.sending !== null}>
+					<Button
+						variant="outlined"
+						size="large"
+						onClick={() => sendTestNotification('sms')}
+						disabled={testNotification.sending !== null}>
 						{testNotification.sending === 'sms' ? 'Sending…' : 'Send test SMS'}
 					</Button>
 				</Stack>
@@ -328,7 +350,8 @@ function AdminControls() {
 								Server logs
 							</Typography>
 							<Typography color="text.secondary" sx={{ mt: 0.5 }}>
-								Live tail of app events — status checks, notifications, signups. {logPaused ? 'Paused.' : 'Updates every 2 seconds.'}
+								Live tail of app events — status checks, notifications, signups.{' '}
+								{logPaused ? 'Paused.' : 'Updates every 2 seconds.'}
 							</Typography>
 						</Box>
 						<Button variant="outlined" size="small" onClick={() => setLogPaused(!logPaused)} sx={{ flexShrink: 0 }}>
@@ -359,7 +382,10 @@ function AdminControls() {
 							logEntries.map((entry) => (
 								<Box
 									key={entry.id}
-									sx={{ color: entry.level === 'error' ? 'error.light' : entry.level === 'warn' ? 'warning.light' : 'inherit' }}>
+									sx={{
+										color:
+											entry.level === 'error' ? 'error.light' : entry.level === 'warn' ? 'warning.light' : 'inherit'
+									}}>
 									{new Date(entry.ts).toLocaleTimeString()} {entry.message}
 								</Box>
 							))

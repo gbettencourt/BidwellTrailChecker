@@ -48,8 +48,7 @@ const ElevationProfile: React.FC<{
 	const range = elevation ? elevation.maxFt - elevation.minFt || 1 : 1;
 	const x = (d: number) => PAD_X + (d / (maxD || 1)) * (WIDTH - PAD_X * 2);
 	const y = (e: number) => PAD_TOP + (1 - (elevation ? (e - elevation.minFt) / range : 0)) * (HEIGHT - PAD_TOP - PAD_BOTTOM);
-	const line =
-		points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.d).toFixed(1)},${y(p.e).toFixed(1)}`).join(' ') || `M${x(0)},${y(0)}`;
+	const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.d).toFixed(1)},${y(p.e).toFixed(1)}`).join(' ') || `M${x(0)},${y(0)}`;
 	const area = `${line} L${x(maxD).toFixed(1)},${HEIGHT - PAD_BOTTOM} L${x(0).toFixed(1)},${HEIGHT - PAD_BOTTOM} Z`;
 	// the profiled path is shorter than the trail when its segments don't
 	// form one continuous route (the Strava Town network); say so
@@ -98,8 +97,7 @@ const ElevationProfile: React.FC<{
 						width="100%"
 						height={HEIGHT}
 						role="img"
-						aria-label={`Elevation profile for ${name}: ${elevation.gainFt} feet of climbing over ${distanceMi.toFixed(1)} miles`}
-					>
+						aria-label={`Elevation profile for ${name}: ${elevation.gainFt} feet of climbing over ${distanceMi.toFixed(1)} miles`}>
 						<path d={area} fill="rgba(25, 118, 210, 0.15)" />
 						<path d={line} fill="none" stroke="#1976d2" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 						<text x={PAD_X} y={10} fontSize={9} fill="#666">
@@ -114,7 +112,8 @@ const ElevationProfile: React.FC<{
 					</svg>
 					{partial && (
 						<Typography variant="caption" color="text.secondary">
-							Profile covers the longest continuous stretch ({elevation.distanceMi.toFixed(1)} mi of {distanceMi.toFixed(1)} mi).
+							Profile covers the longest continuous stretch ({elevation.distanceMi.toFixed(1)} mi of {distanceMi.toFixed(1)}{' '}
+							mi).
 						</Typography>
 					)}
 				</Box>

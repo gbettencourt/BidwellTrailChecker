@@ -128,13 +128,8 @@ app.post(
 	[
 		check('type').isIn(['status', 'issue']),
 		check('location').trim().isLength({ min: 2, max: 120 }),
-		check('details')
-			.if(body('type').equals('issue'))
-			.trim()
-			.isLength({ min: 5, max: 2000 }),
-		check('observedStatus')
-			.if(body('type').equals('status'))
-			.isIn(['open', 'closed']),
+		check('details').if(body('type').equals('issue')).trim().isLength({ min: 5, max: 2000 }),
+		check('observedStatus').if(body('type').equals('status')).isIn(['open', 'closed']),
 		check('observedAt').optional({ checkFalsy: true }).isISO8601(),
 		check('email').optional({ checkFalsy: true }).isEmail().normalizeEmail()
 	],

@@ -2,15 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { TRAIL_DIFFICULTY, TRAIL_INFO } from './trailInfo';
-import {
-	formatMiles,
-	segmentLengthMi,
-	trailGroups,
-	trailTitle,
-	withLocalInfo,
-	type TrailFeature,
-	type Trails
-} from './trailGeometry';
+import { formatMiles, segmentLengthMi, trailGroups, trailTitle, withLocalInfo, type TrailFeature, type Trails } from './trailGeometry';
 import type { TrailElevation } from '../components/ElevationProfile';
 
 // read as data, not modules: Vite only treats .json as JSON, and the trail

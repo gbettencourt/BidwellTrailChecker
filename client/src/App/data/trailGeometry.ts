@@ -82,8 +82,7 @@ export const trailGroups = (trails: Trails): TrailGroup[] => {
 			// label the longest segment of the trail, so a name appears once
 			// on the map instead of once per split segment
 			const representative = [...features].sort(
-				(a, b) =>
-					((b.geometry as LineString).coordinates.length ?? 0) - ((a.geometry as LineString).coordinates.length ?? 0)
+				(a, b) => ((b.geometry as LineString).coordinates.length ?? 0) - ((a.geometry as LineString).coordinates.length ?? 0)
 			)[0];
 			return {
 				name,

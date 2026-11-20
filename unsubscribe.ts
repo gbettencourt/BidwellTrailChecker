@@ -11,10 +11,7 @@ export function unsubscribeToken(user: Pick<User, 'id' | 'email'>) {
 	if (!secret) {
 		throw new Error('ADMIN_SECRET is not configured');
 	}
-	return crypto
-		.createHmac('sha256', secret)
-		.update(`unsubscribe:${user.id}:${user.email.toLowerCase()}`)
-		.digest('base64url');
+	return crypto.createHmac('sha256', secret).update(`unsubscribe:${user.id}:${user.email.toLowerCase()}`).digest('base64url');
 }
 
 export function verifyUnsubscribeToken(user: Pick<User, 'id' | 'email'>, token: string | undefined) {
@@ -29,4 +26,5 @@ const query = (user: Pick<User, 'id' | 'email'>) => `u=${user.id}&t=${unsubscrib
 export const unsubscribePageUrl = (user: Pick<User, 'id' | 'email'>) => `${process.env.APP_URL}/unsubscribe?${query(user)}`;
 
 // RFC 8058 one-click endpoint for the List-Unsubscribe header (Gmail's and Yahoo's built-in unsubscribe button)
-export const oneClickUnsubscribeUrl = (user: Pick<User, 'id' | 'email'>) => `${process.env.APP_URL}/api/unsubscribe/oneclick?${query(user)}`;
+export const oneClickUnsubscribeUrl = (user: Pick<User, 'id' | 'email'>) =>
+	`${process.env.APP_URL}/api/unsubscribe/oneclick?${query(user)}`;

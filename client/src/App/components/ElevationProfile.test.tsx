@@ -18,7 +18,13 @@ const elevation: TrailElevation = {
 describe('ElevationProfile', () => {
 	it('shows the trail stats and the elevation chart', () => {
 		render(
-			<ElevationProfile name="South Rim Trail" distanceMi={2.06} difficulty="Moderate to Difficult" elevation={elevation} onClose={() => {}} />
+			<ElevationProfile
+				name="South Rim Trail"
+				distanceMi={2.06}
+				difficulty="Moderate to Difficult"
+				elevation={elevation}
+				onClose={() => {}}
+			/>
 		);
 		expect(screen.getByRole('heading', { name: 'South Rim Trail' })).toBeInTheDocument();
 		expect(screen.getByText('Moderate to Difficult')).toBeInTheDocument();
@@ -26,7 +32,9 @@ describe('ElevationProfile', () => {
 		expect(screen.getByText('↑598 ft')).toBeInTheDocument();
 		expect(screen.getByText('↓120 ft')).toBeInTheDocument();
 		expect(screen.getByText('900 / 305 ft')).toBeInTheDocument();
-		expect(screen.getByRole('img', { name: /Elevation profile for South Rim Trail: 598 feet of climbing over 2.1 miles/ })).toBeInTheDocument();
+		expect(
+			screen.getByRole('img', { name: /Elevation profile for South Rim Trail: 598 feet of climbing over 2.1 miles/ })
+		).toBeInTheDocument();
 		expect(screen.queryByText(/Profile covers the longest continuous stretch/)).not.toBeInTheDocument();
 	});
 

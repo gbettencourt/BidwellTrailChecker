@@ -24,18 +24,12 @@ describe('api', () => {
 	});
 
 	it('returns the parsed JSON on success', async () => {
-		vi.stubGlobal(
-			'fetch',
-			vi.fn().mockResolvedValue({ ok: true, json: async () => ({ a: 1 }) })
-		);
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ a: 1 }) }));
 		await expect(apiGet('/api/test')).resolves.toEqual({ a: 1 });
 	});
 
 	it('throws on a non-2xx response', async () => {
-		vi.stubGlobal(
-			'fetch',
-			vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) })
-		);
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }));
 		await expect(apiGet('/api/test')).rejects.toThrow('HTTP 500');
 	});
 });

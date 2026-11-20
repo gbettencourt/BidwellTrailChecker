@@ -34,5 +34,11 @@ export const Captcha: React.FC<CaptchaProps> = ({ chars }) => {
 		});
 	}, [chars]);
 
-	return <canvas ref={canvasRef} aria-label="verification code" style={{ width: chars.length * CHAR_WIDTH, height: HEIGHT, display: 'block' }} />;
+	return (
+		<canvas
+			ref={canvasRef}
+			aria-label="verification code"
+			style={{ width: chars.length * CHAR_WIDTH, height: HEIGHT, display: 'block' }}
+		/>
+	);
 };
