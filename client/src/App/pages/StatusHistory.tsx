@@ -16,11 +16,11 @@ import {
 	Typography
 } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
-import { formatDuration, StatusEvent, StatusHistory as History } from '../util/Util';
+import { formatDuration } from '../util/Util';
+import type { StatusEvent, StatusHistory as History } from '../../../../shared-types.js';
 import { apiGet } from '../util/api';
 
 const DAYS = 90;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Validated for colorblind separation against the light and dark surfaces (closed is also hatched)
 const DAY_COLORS = {

@@ -1,14 +1,7 @@
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import { logInfo } from './logger.js';
-
-export type TrailStatus = 'Open' | 'Closed';
-
-export type StatusEvent = {
-	status: TrailStatus;
-	at: string;
-	source: 'auto' | 'manual' | 'email';
-};
+import type { StatusEvent, StatusHistory, TrailStatus } from './shared-types.js';
 
 type HistoryDb = {
 	events: StatusEvent[];
@@ -33,7 +26,7 @@ export async function recordStatus(status: TrailStatus, source: StatusEvent['sou
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export async function statusHistory(limit = 100) {
+export async function statusHistory(limit = 100): Promise<StatusHistory> {
 	await db.read();
 	const events = db.data.events;
 	const now = Date.now();

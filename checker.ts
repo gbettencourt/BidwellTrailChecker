@@ -1,10 +1,11 @@
 import nodemailer from 'nodemailer';
 import schedule from 'node-schedule';
 import DbUtil, { User } from './db.js';
-import dotenv from 'dotenv';
+import './env.js';
 import twilio from 'twilio';
 import { readOverride } from './override-util.js';
-import { recordStatus, TrailStatus } from './history.js';
+import { recordStatus } from './history.js';
+import type { TrailStatus } from './shared-types.js';
 import { parseTrailStatus } from './status-parser.js';
 import { statusChangeEmail, welcomeEmail } from './email-templates.js';
 import { oneClickUnsubscribeUrl } from './unsubscribe.js';
@@ -15,8 +16,6 @@ const unsubscribeHeaders = (user: User) => ({
 	'List-Unsubscribe': `<${oneClickUnsubscribeUrl(user)}>`,
 	'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
 });
-
-dotenv.config();
 
 type Config = {
 	lastCheck: Date;
@@ -36,6 +35,12 @@ export type TrailReport = {
 
 export default class Checker {
 	config: Config;
+	// one client/transporter per Checker, created on first use and reused —
+	// a fresh Twilio client per SMS was one client per user per run, and a
+	// fresh transporter per email was a new SMTP setup each time
+	private smsClient?: ReturnType<typeof twilio>;
+	private pooledTransporter?: ReturnType<typeof nodemailer.createTransport>;
+	private transporter?: ReturnType<typeof nodemailer.createTransport>;
 	constructor(runScheduler = true) {
 		this.config = {
 			lastCheck: new Date(),
@@ -178,8 +183,8 @@ export default class Checker {
 	}
 
 	async sendSms(phone: string, body: string) {
-		const smsClient = twilio(process.env.SMS_SID, process.env.SMS_TOKEN);
-		return smsClient.messages.create({
+		this.smsClient ??= twilio(process.env.SMS_SID, process.env.SMS_TOKEN);
+		return this.smsClient.messages.create({
 			body,
 			from: `+1${process.env.SMS_FROM}`,
 			to: `+1${phone}`
@@ -203,8 +208,18 @@ export default class Checker {
 		};
 	}
 
-	// SMTP server from SMTP_HOST/SMTP_PORT (e.g. Amazon SES), or Gmail when SMTP_HOST isn't set
+	// one transporter per mode, created on first use and reused
 	getTransporter(pool = false) {
+		if (pool) {
+			this.pooledTransporter ??= this.createTransporter(true);
+			return this.pooledTransporter;
+		}
+		this.transporter ??= this.createTransporter(false);
+		return this.transporter;
+	}
+
+	// SMTP server from SMTP_HOST/SMTP_PORT (e.g. Amazon SES), or Gmail when SMTP_HOST isn't set
+	private createTransporter(pool: boolean) {
 		const auth = {
 			user: process.env.SMTP_USER,
 			pass: process.env.SMTP_PWD

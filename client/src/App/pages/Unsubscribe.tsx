@@ -4,6 +4,7 @@ import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
 import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/CaptchaField';
+import { EMAIL_PATTERN } from '../util/Util';
 
 type FormValues = {
 	email: string;
@@ -139,7 +140,7 @@ export const Unsubscribe: React.FC = () => {
 								helperText={errors.email ? 'Please enter a valid email address' : ''}
 								{...register('email', {
 									required: true,
-									pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+									pattern: EMAIL_PATTERN
 								})}
 							/>
 							<CaptchaField chars={captcha.chars} fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })} error={errors.captcha?.message} />

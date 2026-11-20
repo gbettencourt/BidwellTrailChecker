@@ -7,6 +7,7 @@ import { TRAIL_DIFFICULTY } from '../data/trailInfo';
 import {
 	ALWAYS_OPEN_AREA,
 	TRAIL_TYPES,
+	UNNAMED_TRAIL,
 	formatMiles,
 	segmentLengthMi,
 	trailGroups,
@@ -19,6 +20,7 @@ import {
 } from '../data/trailGeometry';
 import ElevationProfile, { type TrailElevation } from '../components/ElevationProfile';
 import { apiGet } from '../util/api';
+import { escapeHtml } from '../../../../shared/escape-html.js';
 import type { TrailStatusState } from '../components/TrailStatusBanner';
 
 const ALWAYS_OPEN_COLOR = '#1f9d55';
@@ -40,13 +42,16 @@ const styleFor =
 		return alwaysOpen ? { ...base, weight: 6, opacity: 1 } : { ...base, opacity: 0.25 };
 	};
 
-const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+// zoom the map to a set of trails, when they have any geometry
+const fitMapToTrails = (map: L.Map, trails: Trails, padding: [number, number]) => {
+	const bounds = L.geoJSON(trails).getBounds();
+	if (bounds.isValid()) map.fitBounds(bounds, { padding });
+};
 
 const FitToTrails: React.FC<{ trails: Trails }> = ({ trails }) => {
 	const map = useMap();
 	useEffect(() => {
-		const bounds = L.geoJSON(trails).getBounds();
-		if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24] });
+		fitMapToTrails(map, trails, [24, 24]);
 	}, [map, trails]);
 	return null;
 };
@@ -73,8 +78,7 @@ const ResetViewControl: React.FC<{ trails: Trails }> = ({ trails }) => {
 			el.textContent = 'Reset view';
 			L.DomEvent.disableClickPropagation(el);
 			L.DomEvent.on(el, 'click', () => {
-				const bounds = L.geoJSON(trails).getBounds();
-				if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24] });
+				fitMapToTrails(map, trails, [24, 24]);
 			});
 			return el;
 		};
@@ -133,8 +137,7 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 		setSelectedName(group.name);
 		const map = mapRef.current;
 		if (!map || !zoom) return;
-		const bounds = L.geoJSON({ type: 'FeatureCollection', features: group.features } as Trails).getBounds();
-		if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
+		fitMapToTrails(map, { type: 'FeatureCollection', features: group.features } as Trails, [40, 40]);
 		const layer = layersRef.current.get(group.representativeId);
 		if (layer) layer.openPopup();
 	};
@@ -144,10 +147,10 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 		const title = trailTitle(feature);
 		layersRef.current.set(String(feature.id), layer);
 		// print the trail name on the map once per trail, on its longest segment
-		if (title !== 'Unnamed trail' && representativeIds.has(String(feature.id))) {
+		if (title !== UNNAMED_TRAIL && representativeIds.has(String(feature.id))) {
 			layer.bindTooltip(title, { permanent: true, direction: 'center', className: 'trail-label', interactive: false });
 		}
-		const distanceMi = title === 'Unnamed trail' ? segmentLengthMi(feature) : (trailDistanceByName.get(title) ?? segmentLengthMi(feature));
+		const distanceMi = title === UNNAMED_TRAIL ? segmentLengthMi(feature) : (trailDistanceByName.get(title) ?? segmentLengthMi(feature));
 		const elevation = elevations[title];
 		const details = [
 			typeFor(feature).label,

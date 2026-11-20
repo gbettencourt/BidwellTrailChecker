@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/CaptchaField';
 import { TrailStatusBanner } from '../components/TrailStatusBanner';
 import { useTrailStatus } from '../hooks/useTrailStatus';
+import { EMAIL_PATTERN } from '../util/Util';
 
 type ReportType = 'status' | 'issue';
 
@@ -125,6 +126,9 @@ export const TrailReportPage: React.FC = () => {
 							placeholder="For example, the trailhead or nearest cross street"
 							error={!!errors.location}
 							helperText={errors.location?.message}
+							// keep these limits in sync with the /api/trail-report validators in
+							// index.ts — the client mirrors them so bad input fails fast, but the
+							// server is the authority
 							{...register('location', {
 								required: 'Please enter a trail or location',
 								minLength: { value: 2, message: 'Please enter a little more detail' },
@@ -162,7 +166,7 @@ export const TrailReportPage: React.FC = () => {
 							helperText={errors.email?.message ?? 'Include this if you are comfortable being contacted for more information.'}
 							error={!!errors.email}
 							{...register('email', {
-								pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' }
+								pattern: { value: EMAIL_PATTERN, message: 'Please enter a valid email address' }
 							})}
 						/>
 

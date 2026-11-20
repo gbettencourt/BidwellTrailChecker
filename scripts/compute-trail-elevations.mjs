@@ -19,6 +19,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { haversineM as haversineMeters } from '../shared/haversine.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -29,14 +30,8 @@ const FT_PER_M = 3.28084;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const haversineM = ([lon1, lat1], [lon2, lat2]) => {
-	const toRad = (d) => (d * Math.PI) / 180;
-	const dLat = toRad(lat2 - lat1);
-	const dLon = toRad(lon2 - lon1);
-	const a =
-		Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-	return 6371000 * 2 * Math.asin(Math.sqrt(a));
-};
+// the script works in [lon, lat] pairs; the shared helper takes degrees
+const haversineM = ([lon1, lat1], [lon2, lat2]) => haversineMeters(lon1, lat1, lon2, lat2);
 
 const pathLengthM = (coords) => {
 	let total = 0;

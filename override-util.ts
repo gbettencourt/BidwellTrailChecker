@@ -1,9 +1,8 @@
 import path from 'path';
 import fs from 'fs';
+import type { OverrideValue } from './shared-types.js';
 
 const DATA_FILE = path.join(process.cwd(), 'trailOverride.json');
-
-export type OverrideValue = 'open' | 'closed' | 'auto';
 
 export function readOverride(): OverrideValue {
 	try {

@@ -7,7 +7,8 @@ import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/Captcha
 import { StatusCard } from '../components/StatusCard';
 import { useTrailStatus } from '../hooks/useTrailStatus';
 import { apiGet } from '../util/api';
-import { cleanPhoneNumber, extractEmailAddress, formatPhoneNumber, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
+import { cleanPhoneNumber, EMAIL_PATTERN, extractEmailAddress, formatPhoneNumber, TRAIL_PAGE_URL } from '../util/Util';
+import type { StatusEvent, StatusHistory } from '../../../../shared-types.js';
 import type { AppInitialData } from '../app-data';
 
 interface FormValues {
@@ -140,7 +141,7 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 									{...register('email', {
 										required: 'Please enter a valid email',
 										pattern: {
-											value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+											value: EMAIL_PATTERN,
 											message: 'Please enter a valid email'
 										}
 									})}

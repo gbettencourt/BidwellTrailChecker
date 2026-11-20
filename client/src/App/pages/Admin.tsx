@@ -3,17 +3,10 @@ import AutoModeRounded from '@mui/icons-material/AutoModeRounded';
 import LockOpenRounded from '@mui/icons-material/LockOpenRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
 import React, { useEffect, useRef, useState } from 'react';
+import type { LogEntry, OverrideValue } from '../../../../shared-types.js';
 
-type OverrideValue = 'open' | 'closed' | 'auto';
 type TestEmailStatus = 'open' | 'closed';
 type TestChannel = 'email' | 'sms';
-
-type LogEntry = {
-	id: number;
-	ts: string;
-	level: 'info' | 'warn' | 'error';
-	message: string;
-};
 
 type TestNotificationState = {
 	sending: TestChannel | null;
@@ -25,6 +18,22 @@ const MODE_LABELS: Record<OverrideValue, string> = {
 	open: 'Forced open',
 	closed: 'Forced closed'
 };
+
+// admin API call with the login token attached; a 401 means the token is
+// stale, so sign out and reload to the login form. Returns null after a
+// 401, so callers bail out instead of reading a dead response.
+async function adminFetch(input: string, init?: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> }): Promise<Response | null> {
+	const res = await fetch(input, {
+		...init,
+		headers: { ...init?.headers, Authorization: `Bearer ${localStorage.getItem('admin_token')}` }
+	});
+	if (res.status === 401) {
+		localStorage.removeItem('admin_token');
+		window.location.reload();
+		return null;
+	}
+	return res;
+}
 
 export function AdminPage() {
 	const [password, setPassword] = useState('');
@@ -99,17 +108,8 @@ function AdminControls() {
 	const logContainerRef = useRef<HTMLDivElement>(null);
 
 	const fetchStatus = async () => {
-		const res = await fetch('/api/admin/status', {
-			headers: {
-				Authorization: `Bearer ${localStorage.getItem('admin_token')}`
-			}
-		});
-
-		if (res.status === 401) {
-			localStorage.removeItem('admin_token');
-			window.location.reload();
-			return;
-		}
+		const res = await adminFetch('/api/admin/status');
+		if (!res) return;
 
 		const data = await res.json();
 		setOverride(data.override);
@@ -122,17 +122,8 @@ function AdminControls() {
 	}, []);
 
 	const fetchLogs = async () => {
-		const res = await fetch(`/api/admin/logs?since=${logCursorRef.current}`, {
-			headers: {
-				Authorization: `Bearer ${localStorage.getItem('admin_token')}`
-			}
-		});
-
-		if (res.status === 401) {
-			localStorage.removeItem('admin_token');
-			window.location.reload();
-			return;
-		}
+		const res = await adminFetch(`/api/admin/logs?since=${logCursorRef.current}`);
+		if (!res) return;
 
 		if (!res.ok) return;
 
@@ -173,12 +164,9 @@ function AdminControls() {
 		setSaving(true);
 		setSaved(false);
 
-		await fetch('/api/admin/override', {
+		await adminFetch('/api/admin/override', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${localStorage.getItem('admin_token')}`
-			},
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ value: override })
 		});
 
@@ -191,20 +179,13 @@ function AdminControls() {
 		setTestNotification({ sending: channel, result: null });
 
 		try {
-			const res = await fetch(`/api/admin/test-${channel}`, {
+			const res = await adminFetch(`/api/admin/test-${channel}`, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: 'Bearer ' + localStorage.getItem('admin_token')
-				},
+				headers: { 'Content-Type': 'application/json' },
 				body: channel === 'email' ? JSON.stringify({ status: testEmailStatus }) : undefined
 			});
 
-			if (res.status === 401) {
-				localStorage.removeItem('admin_token');
-				window.location.reload();
-				return;
-			}
+			if (!res) return;
 
 			if (!res.ok) {
 				const data = await res.json();

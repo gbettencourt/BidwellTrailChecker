@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { App } from './App/App';
 import type { AppInitialData } from './App/app-data';
-import { PageContent, PageMetadata, renderPageMetadata } from './App/components/PageMetadata';
+import { PageContent, PageMetadata, getPageContent, renderPageMetadata } from './App/components/PageMetadata';
 
 export function renderApp(url: string, initialData: AppInitialData) {
 	const rendered = renderToString(
@@ -22,8 +22,9 @@ export function renderApp(url: string, initialData: AppInitialData) {
 	return { markup, styles: styles.join(''), metadata };
 }
 
-export function renderPageContent(heading: string, description: string) {
-	return renderToStaticMarkup(<PageContent heading={heading} description={description} />);
+export function renderPageContent(pathname: string) {
+	const content = getPageContent(pathname);
+	return content ? renderToStaticMarkup(<PageContent heading={content.heading} description={content.description} />) : '';
 }
 
 export function renderMetadata(pathname: string, status: string, lastCheck: string | undefined, siteUrl: string) {

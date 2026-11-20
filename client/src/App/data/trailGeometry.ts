@@ -1,5 +1,6 @@
 import type { Feature, FeatureCollection, Geometry, LineString } from 'geojson';
 import { TRAIL_INFO, TRAIL_DIFFICULTY, type TrailDifficulty } from './trailInfo';
+import { haversineMi } from '../../../../shared/haversine.js';
 
 // Pure trail-data logic, kept free of Leaflet and React so it can be tested
 // without a map. TrailMap.tsx renders these results; it does not compute them.
@@ -22,6 +23,8 @@ export const TRAIL_TYPES: Record<string, { label: string; color: string; dashArr
 export const DEFAULT_TYPE = TRAIL_TYPES.path;
 // the always-open trail network south of the park
 export const ALWAYS_OPEN_AREA = 'Strava Town';
+// label for segments with no name at all
+export const UNNAMED_TRAIL = 'Unnamed trail';
 
 export const typeFor = (feature?: TrailFeature) => TRAIL_TYPES[feature?.properties?.highway ?? ''] ?? DEFAULT_TYPE;
 
@@ -37,7 +40,7 @@ export const withLocalInfo = (trails: Trails): Trails => ({
 // display name for a trail segment: its OSM / local name, or a generic label
 export const trailTitle = (feature: TrailFeature) => {
 	const { name, alwaysOpen } = feature.properties;
-	return name ?? (alwaysOpen ? `${ALWAYS_OPEN_AREA} trail` : 'Unnamed trail');
+	return name ?? (alwaysOpen ? `${ALWAYS_OPEN_AREA} trail` : UNNAMED_TRAIL);
 };
 
 // length of one trail segment in miles, from its GeoJSON coordinates
@@ -45,11 +48,7 @@ export const segmentLengthMi = (feature: TrailFeature) => {
 	const coords = (feature.geometry as LineString).coordinates;
 	let total = 0;
 	for (let i = 1; i < coords.length; i++) {
-		const [lon1, lat1] = coords[i - 1].map((d) => (d * Math.PI) / 180);
-		const [lon2, lat2] = coords[i].map((d) => (d * Math.PI) / 180);
-		const dLat = lat2 - lat1;
-		const dLon = lon2 - lon1;
-		total += 3958.8 * 2 * Math.asin(Math.sqrt(Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2));
+		total += haversineMi(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
 	}
 	return total;
 };
@@ -73,7 +72,7 @@ export const trailGroups = (trails: Trails): TrailGroup[] => {
 	const byName = new Map<string, TrailFeature[]>();
 	for (const feature of trails.features) {
 		const title = trailTitle(feature);
-		if (title === 'Unnamed trail') continue;
+		if (title === UNNAMED_TRAIL) continue;
 		const group = byName.get(title) ?? [];
 		group.push(feature);
 		byName.set(title, group);

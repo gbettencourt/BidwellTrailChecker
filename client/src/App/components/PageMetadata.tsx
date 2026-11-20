@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { normalizeTrailStatus } from '../util/api';
-
-type TrailStatus = 'Open' | 'Closed' | 'Unknown';
+import type { TrailStatus } from '../../../../shared-types.js';
 
 export type PageMetadataProps = {
 	title: string;
@@ -14,13 +13,63 @@ export type PageMetadataProps = {
 };
 
 type MetadataContext = {
-	status: TrailStatus;
+	status: TrailStatus | 'Unknown';
 	lastCheck?: string;
 	siteUrl: string;
 };
 
 const PARK_NAME = 'Upper Bidwell Park trails';
 const PAGE_TITLE = 'Bidwell Trail Checker';
+
+// one record for every page's metadata — the heading is for the
+// server-rendered shell of the history/report/about pages (see
+// getPageContent); the other routes have no shell
+type PageRoute = {
+	title: string;
+	description: string;
+	noIndex?: boolean;
+	heading?: string;
+};
+
+const PAGE_ROUTES: Record<string, PageRoute> = {
+	'/map': {
+		title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
+		description: 'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.'
+	},
+	'/history': {
+		title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
+		description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.',
+		heading: 'Upper Bidwell Park trail status history'
+	},
+	'/report': {
+		title: 'Report Trail Status or Issue | Bidwell Trail Checker',
+		description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.',
+		heading: 'Report a trail status or issue'
+	},
+	'/about': {
+		title: 'About | Bidwell Trail Checker',
+		description:
+			'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.',
+		heading: 'About Bidwell Trail Checker'
+	},
+	'/unsubscribe': {
+		title: `Unsubscribe | ${PAGE_TITLE}`,
+		description: 'Unsubscribe from Bidwell Park trail status alerts.',
+		noIndex: true
+	},
+	'/admin': {
+		title: `Admin | ${PAGE_TITLE}`,
+		description: 'Manage Bidwell Park trail status.',
+		noIndex: true
+	}
+};
+
+// heading + description for a page's server-rendered shell, from the same
+// record as its metadata; undefined for routes without a shell
+export function getPageContent(pathname: string): { heading: string; description: string } | undefined {
+	const page = PAGE_ROUTES[pathname];
+	return page?.heading ? { heading: page.heading, description: page.description } : undefined;
+}
 
 export function getPageMetadata(pathname: string, context: MetadataContext): PageMetadataProps {
 	const canonical = new URL(pathname, context.siteUrl).href;
@@ -81,41 +130,18 @@ export function getPageMetadata(pathname: string, context: MetadataContext): Pag
 		};
 	}
 
-	const routes: Record<string, Omit<PageMetadataProps, 'canonical' | 'image'>> = {
-		'/map': {
-			title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
-			description: 'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.'
-		},
-		'/history': {
-			title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',
-			description: 'Review recorded trail openings and closures for Upper Bidwell Park in Chico, California.'
-		},
-		'/report': {
-			title: 'Report Trail Status or Issue | Bidwell Trail Checker',
-			description: 'Report a trail status discrepancy or an issue on the Upper Bidwell Park trails in Chico, California.'
-		},
-		'/about': {
-			title: 'About | Bidwell Trail Checker',
-			description:
-				'How Bidwell Trail Checker works: where the Upper Bidwell Park trail status comes from, what it means, and how to get alerts.'
-		},
-		'/unsubscribe': {
-			title: `Unsubscribe | ${PAGE_TITLE}`,
-			description: 'Unsubscribe from Bidwell Park trail status alerts.',
-			noIndex: true
-		},
-		'/admin': {
-			title: `Admin | ${PAGE_TITLE}`,
-			description: 'Manage Bidwell Park trail status.',
-			noIndex: true
-		}
-	};
-	const page = routes[pathname] ?? {
+	const page = PAGE_ROUTES[pathname] ?? {
 		title: PAGE_TITLE,
 		description: 'Trail status and alerts for Upper Bidwell Park in Chico, California.',
 		noIndex: true
 	};
-	return { ...page, canonical, image };
+	return {
+		title: page.title,
+		description: page.description,
+		...(page.noIndex ? { noIndex: true } : {}),
+		canonical,
+		image
+	};
 }
 
 export const PageMetadata: React.FC<PageMetadataProps> = ({ title, description, canonical, image, noIndex, structuredData }) => (
@@ -146,7 +172,7 @@ export const PageMetadata: React.FC<PageMetadataProps> = ({ title, description, 
 	</>
 );
 
-export const ClientPageMetadata: React.FC<{ status: TrailStatus; lastCheck?: string; siteUrl: string }> = ({
+export const ClientPageMetadata: React.FC<{ status: TrailStatus | 'Unknown'; lastCheck?: string; siteUrl: string }> = ({
 	status,
 	lastCheck,
 	siteUrl
@@ -167,6 +193,6 @@ export const PageContent: React.FC<{ heading: string; description: string }> = (
 );
 
 export function renderPageMetadata(pathname: string, status: string, lastCheck: string | undefined, siteUrl: string) {
-	const knownStatus: TrailStatus = normalizeTrailStatus(status, 'Unknown');
+	const knownStatus: TrailStatus | 'Unknown' = normalizeTrailStatus(status, 'Unknown');
 	return getPageMetadata(pathname, { status: knownStatus, lastCheck, siteUrl });
 }
