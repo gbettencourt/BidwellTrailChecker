@@ -53,10 +53,7 @@ describe('useTrailStatus', () => {
 	});
 
 	it('treats an unexpected status string as unknown', async () => {
-		vi.stubGlobal(
-			'fetch',
-			vi.fn().mockResolvedValue({ ok: true, json: async () => ({ trailStatus: 'Maybe', lastCheck: '' }) })
-		);
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ trailStatus: 'Maybe', lastCheck: '' }) }));
 		render(<Probe />);
 		await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('unknown'));
 	});

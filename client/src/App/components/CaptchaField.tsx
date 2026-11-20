@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { Box, Stack, TextField, Typography } from '@mui/material';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 import { Captcha } from './Captcha';
@@ -12,10 +12,10 @@ export const isCaptchaCorrect = (value: string, code: number) => parseInt(value,
 // the code stays fixed for the life of the form; pass the server-seeded code
 // (from initialData) when there is one so SSR and the client agree
 export function useCaptcha(seed?: number) {
-	const code = useRef(seed ?? getRandomInt(1000, 9999));
+	const [code] = useState(() => seed ?? getRandomInt(1000, 9999));
 	return {
-		chars: code.current.toString(),
-		verify: (value: string) => isCaptchaCorrect(value, code.current)
+		chars: code.toString(),
+		verify: (value: string) => isCaptchaCorrect(value, code)
 	};
 }
 

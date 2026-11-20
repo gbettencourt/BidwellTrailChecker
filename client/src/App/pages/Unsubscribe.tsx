@@ -143,7 +143,11 @@ export const Unsubscribe: React.FC = () => {
 									pattern: EMAIL_PATTERN
 								})}
 							/>
-							<CaptchaField chars={captcha.chars} fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })} error={errors.captcha?.message} />
+							<CaptchaField
+								chars={captcha.chars}
+								fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })}
+								error={errors.captcha?.message}
+							/>
 							<Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
 								<Button variant="outlined" component={RouterLink} to="/">
 									Cancel

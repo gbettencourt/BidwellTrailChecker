@@ -52,7 +52,11 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 	const isOpen = status === 'Open';
 	const isKnown = status === 'Open' || status === 'Closed';
 	const color = !isKnown ? 'text.secondary' : isOpen ? 'success.main' : 'error.main';
-	const tint = !isKnown ? 'var(--mui-palette-text-secondary)' : isOpen ? 'var(--mui-palette-success-main)' : 'var(--mui-palette-error-main)';
+	const tint = !isKnown
+		? 'var(--mui-palette-text-secondary)'
+		: isOpen
+			? 'var(--mui-palette-success-main)'
+			: 'var(--mui-palette-error-main)';
 	const Icon = !isKnown ? HelpRounded : isOpen ? CheckCircleRounded : DoNotDisturbOnRounded;
 	const checked = formatLastCheck(lastCheck, now);
 	const sinceDate = since ? new Date(since) : null;

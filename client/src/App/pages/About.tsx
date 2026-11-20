@@ -17,8 +17,8 @@ export const About: React.FC = () => (
 				What this is
 			</Typography>
 			<Typography>
-				Bidwell Trail Checker shows whether the trails in Upper Bidwell Park are open or closed, and can send you an email or text when
-				the status changes.
+				Bidwell Trail Checker shows whether the trails in Upper Bidwell Park are open or closed, and can send you an email or text
+				when the status changes.
 			</Typography>
 		</Stack>
 
@@ -38,8 +38,8 @@ export const About: React.FC = () => (
 				.
 			</Typography>
 			<Typography>
-				The City's status can lag behind real conditions — after heavy rain the trails may be soft or muddy while the site still reads
-				Open. Always check the signs at the trailhead for the latest status before you ride.
+				The City's status can lag behind real conditions — after heavy rain the trails may be soft or muddy while the site still
+				reads Open. Always check the signs at the trailhead for the latest status before you ride.
 			</Typography>
 		</Stack>
 

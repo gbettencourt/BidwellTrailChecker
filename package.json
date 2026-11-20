@@ -10,7 +10,10 @@
 		"build": "npm run clean && tsc && rsync -a client dist --exclude node_modules",
 		"check": "node dist/checker.js",
 		"check-types": "tsc --noEmit",
-		"test": "vitest run && npm --prefix client test"
+		"test": "vitest run && npm --prefix client test",
+		"lint": "eslint .",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
 	},
 	"keywords": [],
 	"author": "Gary Bettencourt",
@@ -29,11 +32,18 @@
 		"winston": "^3.19.0"
 	},
 	"devDependencies": {
+		"@eslint/js": "^10.0.1",
 		"@types/express": "^5.0.6",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/node": "^26.6.6",
 		"@types/node-schedule": "^2.1.8",
-		"typescript": "^7.0.2",
+		"@typescript/native": "npm:typescript@^7.0.2",
+		"eslint": "^10.15.0",
+		"eslint-config-prettier": "^10.1.8",
+		"globals": "^17.14.0",
+		"prettier": "^3.10.1",
+		"typescript": "npm:@typescript/typescript6@^6.0.2",
+		"typescript-eslint": "^8.73.0",
 		"vitest": "^5.1.0"
 	},
 	"prettier": {

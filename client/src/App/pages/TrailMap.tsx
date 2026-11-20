@@ -2,7 +2,20 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, LayersControl, ScaleControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Alert, Box, FormControlLabel, List, ListItemButton, ListItemText, Paper, Skeleton, Stack, Switch, TextField, Typography } from '@mui/material';
+import {
+	Alert,
+	Box,
+	FormControlLabel,
+	List,
+	ListItemButton,
+	ListItemText,
+	Paper,
+	Skeleton,
+	Stack,
+	Switch,
+	TextField,
+	Typography
+} from '@mui/material';
 import { TRAIL_DIFFICULTY } from '../data/trailInfo';
 import {
 	ALWAYS_OPEN_AREA,
@@ -150,7 +163,8 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 		if (title !== UNNAMED_TRAIL && representativeIds.has(String(feature.id))) {
 			layer.bindTooltip(title, { permanent: true, direction: 'center', className: 'trail-label', interactive: false });
 		}
-		const distanceMi = title === UNNAMED_TRAIL ? segmentLengthMi(feature) : (trailDistanceByName.get(title) ?? segmentLengthMi(feature));
+		const distanceMi =
+			title === UNNAMED_TRAIL ? segmentLengthMi(feature) : (trailDistanceByName.get(title) ?? segmentLengthMi(feature));
 		const elevation = elevations[title];
 		const details = [
 			typeFor(feature).label,
@@ -210,9 +224,9 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 						{filteredGroups.map((group) => (
 							<ListItemButton key={group.name} selected={selectedName === group.name} onClick={() => selectTrail(group)}>
 								<ListItemText
-										primary={group.name}
-										secondary={`${group.typeLabel} · ${formatMiles(group.distanceMi)}${elevations[group.name] ? ` · ↑${elevations[group.name].gainFt} ft` : ''}${group.alwaysOpen ? ' · Stays open during park closures' : ''}`}
-									/>
+									primary={group.name}
+									secondary={`${group.typeLabel} · ${formatMiles(group.distanceMi)}${elevations[group.name] ? ` · ↑${elevations[group.name].gainFt} ft` : ''}${group.alwaysOpen ? ' · Stays open during park closures' : ''}`}
+								/>
 							</ListItemButton>
 						))}
 						{filteredGroups.length === 0 && (
@@ -265,9 +279,15 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 						'& .street-tiles': { filter: 'invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9)' }
 					}
 				}}>
-				{!trails && !error && <Skeleton variant="rectangular" sx={{ position: 'absolute', inset: 0, height: '100%', zIndex: 1000 }} />}
+				{!trails && !error && (
+					<Skeleton variant="rectangular" sx={{ position: 'absolute', inset: 0, height: '100%', zIndex: 1000 }} />
+				)}
 				<MapContainer center={[39.79, -121.75]} zoom={13} scrollWheelZoom>
-					<CaptureMap onMap={(map) => { mapRef.current = map; }} />
+					<CaptureMap
+						onMap={(map) => {
+							mapRef.current = map;
+						}}
+					/>
 					<ScaleControl position="bottomleft" />
 					<LayersControl position="topright">
 						<LayersControl.BaseLayer checked name="Map">
@@ -290,7 +310,12 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 					{trails && (
 						<>
 							{/* remount on toggle, and once elevations arrive, so popups, hover handlers and draw order pick up the new style */}
-							<GeoJSON key={`${showAlwaysOpen}-${Object.keys(elevations).length > 0}`} data={trails} style={style} onEachFeature={onEachTrail} />
+							<GeoJSON
+								key={`${showAlwaysOpen}-${Object.keys(elevations).length > 0}`}
+								data={trails}
+								style={style}
+								onEachFeature={onEachTrail}
+							/>
 							<FitToTrails trails={trails} />
 							<ResetViewControl trails={trails} />
 						</>
@@ -309,28 +334,30 @@ const TrailMap: React.FC<{ status?: TrailStatusState }> = ({ status }) => {
 			)}
 
 			<Stack direction="row" spacing={2.5} sx={{ flexWrap: 'wrap', rowGap: 1, px: 0.5 }}>
-				{[...Object.values(TRAIL_TYPES), { label: `${ALWAYS_OPEN_AREA} (open during closures)`, color: ALWAYS_OPEN_COLOR, dashArray: undefined }].map(
-					({ label, color, dashArray }: { label: string; color: string; dashArray?: string }) => (
-						<Stack key={label} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-							<Box
-								sx={{
-									width: 22,
-									height: dashArray ? 0 : 4,
-									borderRadius: 2,
-									bgcolor: dashArray ? 'transparent' : color,
-									borderTop: dashArray ? `3px dashed ${color}` : 'none'
-								}}
-							/>
-							<Typography variant="body2" color="text.secondary">
-								{label}
-							</Typography>
-						</Stack>
-					)
-				)}
+				{[
+					...Object.values(TRAIL_TYPES),
+					{ label: `${ALWAYS_OPEN_AREA} (open during closures)`, color: ALWAYS_OPEN_COLOR, dashArray: undefined }
+				].map(({ label, color, dashArray }: { label: string; color: string; dashArray?: string }) => (
+					<Stack key={label} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+						<Box
+							sx={{
+								width: 22,
+								height: dashArray ? 0 : 4,
+								borderRadius: 2,
+								bgcolor: dashArray ? 'transparent' : color,
+								borderTop: dashArray ? `3px dashed ${color}` : 'none'
+							}}
+						/>
+						<Typography variant="body2" color="text.secondary">
+							{label}
+						</Typography>
+					</Stack>
+				))}
 			</Stack>
 
 			<Typography variant="body2" color="text.secondary" sx={{ px: 0.5 }}>
-				Trail data from OpenStreetMap and may be incomplete. Difficulty ratings from the City of Chico's Upper Bidwell Park trails map. Follow posted signs and closures at the park.
+				Trail data from OpenStreetMap and may be incomplete. Difficulty ratings from the City of Chico's Upper Bidwell Park trails
+				map. Follow posted signs and closures at the park.
 			</Typography>
 		</Stack>
 	);

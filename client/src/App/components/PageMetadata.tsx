@@ -34,7 +34,8 @@ type PageRoute = {
 const PAGE_ROUTES: Record<string, PageRoute> = {
 	'/map': {
 		title: 'Upper Bidwell Park Trail Map | Bidwell Trail Checker',
-		description: 'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.'
+		description:
+			'Explore bike-legal trails in Upper Bidwell Park, Chico, California, including trails that remain open during park closures.'
 	},
 	'/history': {
 		title: 'Bidwell Park Trail Status History | Bidwell Trail Checker',

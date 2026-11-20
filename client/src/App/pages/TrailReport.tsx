@@ -163,14 +163,20 @@ export const TrailReportPage: React.FC = () => {
 							label="Your email (optional)"
 							type="email"
 							autoComplete="email"
-							helperText={errors.email?.message ?? 'Include this if you are comfortable being contacted for more information.'}
+							helperText={
+								errors.email?.message ?? 'Include this if you are comfortable being contacted for more information.'
+							}
 							error={!!errors.email}
 							{...register('email', {
 								pattern: { value: EMAIL_PATTERN, message: 'Please enter a valid email address' }
 							})}
 						/>
 
-						<CaptchaField chars={captcha.chars} fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })} error={errors.captcha?.message} />
+						<CaptchaField
+							chars={captcha.chars}
+							fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })}
+							error={errors.captcha?.message}
+						/>
 
 						<Button variant="contained" size="large" type="submit" disabled={isSubmitting}>
 							{isSubmitting ? 'Sending report…' : 'Send report'}

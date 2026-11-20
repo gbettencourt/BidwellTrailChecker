@@ -1,20 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import DoNotDisturbOnRounded from '@mui/icons-material/DoNotDisturbOnRounded';
-import {
-	Alert,
-	Box,
-	Paper,
-	Skeleton,
-	Stack,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableRow,
-	Tooltip,
-	Typography
-} from '@mui/material';
+import { Alert, Box, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 import { formatDuration } from '../util/Util';
 import type { StatusEvent, StatusHistory as History } from '../../../../shared-types.js';
@@ -182,7 +169,9 @@ export const StatusHistory: React.FC = () => {
 			{!history && !error && <Skeleton variant="rounded" height={260} />}
 
 			{history && !current && (
-				<Alert severity="info">No history yet. Changes are recorded from now on, so check back after the next opening or closure.</Alert>
+				<Alert severity="info">
+					No history yet. Changes are recorded from now on, so check back after the next opening or closure.
+				</Alert>
 			)}
 
 			{history && current && (
@@ -198,11 +187,7 @@ export const StatusHistory: React.FC = () => {
 							value={history.stats.avgClosureMs != null ? formatDuration(history.stats.avgClosureMs) : '–'}
 							detail={history.stats.avgClosureMs != null ? 'average, last 12 months' : 'not enough data yet'}
 						/>
-						<StatTile
-							label="Closures"
-							value={history.stats.closuresLast90Days}
-							detail="in the last 90 days"
-						/>
+						<StatTile label="Closures" value={history.stats.closuresLast90Days} detail="in the last 90 days" />
 					</Stack>
 
 					<Paper sx={{ p: { xs: 2.5, sm: 3 } }}>

@@ -119,8 +119,10 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 						{initialData?.notificationFromEmail && (
 							<Typography color="text.secondary">
 								Our emails come from{' '}
-								<Link href={`mailto:${extractEmailAddress(initialData.notificationFromEmail)}`}>{initialData.notificationFromEmail}</Link> — if the
-								confirmation lands in spam, add that address to your contacts so you don't miss trail alerts.
+								<Link href={`mailto:${extractEmailAddress(initialData.notificationFromEmail)}`}>
+									{initialData.notificationFromEmail}
+								</Link>{' '}
+								— if the confirmation lands in spam, add that address to your contacts so you don't miss trail alerts.
 							</Typography>
 						)}
 					</Stack>
@@ -178,7 +180,11 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 									</Collapse>
 								</Box>
 
-								<CaptchaField chars={captcha.chars} fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })} error={errors.captcha?.message} />
+								<CaptchaField
+									chars={captcha.chars}
+									fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })}
+									error={errors.captcha?.message}
+								/>
 
 								<Button variant="contained" size="large" type="submit" disabled={isSubmitting}>
 									{isSubmitting ? 'Signing up…' : 'Sign up for alerts'}

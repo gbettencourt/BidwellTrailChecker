@@ -68,25 +68,25 @@ The server listens on `PORT` over plain HTTP. Put a reverse proxy such as [Caddy
 
 All are created on first use and are not in git. Back them up.
 
-| File | Contents |
-|---|---|
-| `db.json` | Subscribers (email, phone) |
+| File           | Contents                        |
+| -------------- | ------------------------------- |
+| `db.json`      | Subscribers (email, phone)      |
 | `history.json` | Every open/closed status change |
 
 ## Configuration
 
 Set in `.env`:
 
-| Variable | Description |
-|---|---|
-| `PORT` | Port the server listens on (default 5000) |
-| `APP_URL` | Public URL of the site, used for links in emails and as the default canonical site origin, e.g. `https://www.chicomtb.com` |
-| `TRAIL_STATUS_URL` | City trail status page to check |
-| `SMTP_HOST`, `SMTP_PORT` | SMTP server for sending email, e.g. `email-smtp.us-west-2.amazonaws.com` and `587` for Amazon SES. Leave `SMTP_HOST` empty to send through Gmail. |
-| `SMTP_USER`, `SMTP_PWD` | SMTP login: SES SMTP credentials, or a Gmail account and [app password](https://support.google.com/accounts/answer/185833) |
-| `SMTP_FROM_EMAIL` | From address on alerts |
-| `SMTP_ADMIN_EMAIL` | Admin address for operational notifications and test emails sent from the admin page |
-| `SMS_SID`, `SMS_TOKEN`, `SMS_FROM` | Twilio account SID, auth token and sending number (10 digits, no +1) |
+| Variable                           | Description                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                             | Port the server listens on (default 5000)                                                                                                         |
+| `APP_URL`                          | Public URL of the site, used for links in emails and as the default canonical site origin, e.g. `https://www.chicomtb.com`                        |
+| `TRAIL_STATUS_URL`                 | City trail status page to check                                                                                                                   |
+| `SMTP_HOST`, `SMTP_PORT`           | SMTP server for sending email, e.g. `email-smtp.us-west-2.amazonaws.com` and `587` for Amazon SES. Leave `SMTP_HOST` empty to send through Gmail. |
+| `SMTP_USER`, `SMTP_PWD`            | SMTP login: SES SMTP credentials, or a Gmail account and [app password](https://support.google.com/accounts/answer/185833)                        |
+| `SMTP_FROM_EMAIL`                  | From address on alerts                                                                                                                            |
+| `SMTP_ADMIN_EMAIL`                 | Admin address for operational notifications and test emails sent from the admin page                                                              |
+| `SMS_SID`, `SMS_TOKEN`, `SMS_FROM` | Twilio account SID, auth token and sending number (10 digits, no +1)                                                                              |
 
 ## Updating the trail map
 
@@ -97,16 +97,16 @@ Trail data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contribut
 
 ## Project layout
 
-| Path | Purpose |
-|---|---|
-| `index.ts` | Express server and public API routes |
-| `checker.ts` | Scheduled status checks and notifications |
-| `status-parser.ts` | Reads the trail status from the city page |
-| `history.ts` | Status change history |
-| `email-templates.ts` | HTML and plain-text alert emails |
-| `unsubscribe.ts` | Signed unsubscribe links |
-| `db.ts` | Subscriber storage |
-| `client/` | React front end |
+| Path                 | Purpose                                   |
+| -------------------- | ----------------------------------------- |
+| `index.ts`           | Express server and public API routes      |
+| `checker.ts`         | Scheduled status checks and notifications |
+| `status-parser.ts`   | Reads the trail status from the city page |
+| `history.ts`         | Status change history                     |
+| `email-templates.ts` | HTML and plain-text alert emails          |
+| `unsubscribe.ts`     | Signed unsubscribe links                  |
+| `db.ts`              | Subscriber storage                        |
+| `client/`            | React front end                           |
 
 ## License
 

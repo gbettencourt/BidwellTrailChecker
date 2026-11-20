@@ -7,6 +7,8 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { logInfo } from './logger.js';
+import type Checker from './checker.js';
+import type { User } from './db.js';
 
 let tmp: string;
 let originalCwd: string;
@@ -18,7 +20,7 @@ let readOverride: typeof import('./override-util.js').readOverride;
 
 const manualOverrideCalls: string[] = [];
 const fetchStatusCalls: number[] = [];
-const sendStatusEmailCalls: { status: string; user: any }[] = [];
+const sendStatusEmailCalls: { status: string; user: User }[] = [];
 const sendSmsCalls: { phone: string; body: string }[] = [];
 
 // the router only needs the checker methods its routes call
@@ -29,7 +31,7 @@ const stubChecker = {
 	fetchStatus: async () => {
 		fetchStatusCalls.push(1);
 	},
-	sendStatusEmail: async (status: string, user: any) => {
+	sendStatusEmail: async (status: string, user: User) => {
 		sendStatusEmailCalls.push({ status, user });
 		return { messageId: 'stub-message-id' };
 	},
@@ -71,7 +73,7 @@ describe('admin-router', () => {
 		({ readOverride } = await import('./override-util.js'));
 		const app = express();
 		app.use(express.json());
-		app.use('/api/admin', adminRouter(stubChecker as any));
+		app.use('/api/admin', adminRouter(stubChecker as unknown as Checker));
 		server = app.listen(0);
 		await new Promise<void>((resolve) => server.once('listening', resolve));
 		baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/admin`;
@@ -190,10 +192,7 @@ describe('admin-router', () => {
 		expect(sendStatusEmailCalls[0].user.email).toBe('admin@example.com');
 	});
 	test('test-email fails when the admin user is not in the database', async () => {
-		fs.writeFileSync(
-			path.join(tmp, 'db.json'),
-			JSON.stringify({ users: [{ id: 2, email: 'rider@example.com', phone: '' }] })
-		);
+		fs.writeFileSync(path.join(tmp, 'db.json'), JSON.stringify({ users: [{ id: 2, email: 'rider@example.com', phone: '' }] }));
 		const res = await postJson(`${baseUrl}/test-email`, { status: 'open' }, authHeaders());
 		expect(res.status).toBe(500);
 		seedDb();

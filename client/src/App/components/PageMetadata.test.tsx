@@ -22,7 +22,9 @@ describe('getPageMetadata', () => {
 	it('gives the homepage a generic title and description when the status is unknown', () => {
 		const meta = getPageMetadata('/', { status: 'Unknown', siteUrl: SITE_URL });
 		expect(meta.title).toBe('Bidwell Trail Checker | Upper Bidwell Park');
-		expect(meta.description).toBe('Current trail status for Upper Bidwell Park in Chico, California. Check the latest status before visiting.');
+		expect(meta.description).toBe(
+			'Current trail status for Upper Bidwell Park in Chico, California. Check the latest status before visiting.'
+		);
 		expect(meta.canonical).toBe('https://www.chicomtb.com/');
 		const graph = (meta.structuredData as { '@graph': Array<Record<string, unknown>> })['@graph'];
 		const park = graph.find((node) => node['@type'] === 'Park');

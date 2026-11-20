@@ -7,13 +7,13 @@ const originals = { log: console.log, warn: console.warn, error: console.error }
 
 describe('logger', () => {
 	beforeAll(() => {
-		console.log = (...args: any[]) => {
+		console.log = (...args: unknown[]) => {
 			calls.push({ method: 'log', message: String(args[0]) });
 		};
-		console.warn = (...args: any[]) => {
+		console.warn = (...args: unknown[]) => {
 			calls.push({ method: 'warn', message: String(args[0]) });
 		};
-		console.error = (...args: any[]) => {
+		console.error = (...args: unknown[]) => {
 			calls.push({ method: 'error', message: String(args[0]) });
 		};
 	});

@@ -23,7 +23,10 @@ export function parseTrailStatus(html: string): ParseResult {
 
 	const statuses = rows.map(([location, status]) => {
 		// tolerate footnote markers and punctuation around the word, but nothing else
-		const word = status.toUpperCase().replace(/[^A-Z ]/g, '').trim();
+		const word = status
+			.toUpperCase()
+			.replace(/[^A-Z ]/g, '')
+			.trim();
 		return { location, status, word };
 	});
 
