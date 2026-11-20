@@ -192,11 +192,10 @@ app.post(
 	async (req: Request, res: Response) => {
 		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
-			res.send({
+			return res.status(400).json({
 				success: false,
 				error: 'invalid email/phone'
 			});
-			return;
 		}
 		const email = req.body.email;
 		const phone = req.body.phone;
@@ -231,11 +230,10 @@ app.post('/api/rmemail', [check('email').isEmail()], async (req: Request, res: R
 
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
-		res.send({
+		return res.status(400).json({
 			success: false,
 			error: 'invalid email'
 		});
-		return;
 	}
 	const email = req.body.email;
 	logInfo('removing email=' + email);
