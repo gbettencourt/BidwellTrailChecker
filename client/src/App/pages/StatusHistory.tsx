@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 import { formatDuration, StatusEvent, StatusHistory as History } from '../util/Util';
+import { apiGet } from '../util/api';
 
 const DAYS = 90;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -138,11 +139,7 @@ export const StatusHistory: React.FC = () => {
 	const [error, setError] = useState(false);
 
 	useEffect(() => {
-		fetch('/api/statushistory')
-			.then((res) => {
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				return res.json();
-			})
+		apiGet<History>('/api/statushistory')
 			.then(setHistory)
 			.catch((e) => {
 				console.error('Failed to load status history:', e);
