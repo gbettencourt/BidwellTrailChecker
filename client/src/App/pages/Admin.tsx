@@ -51,7 +51,10 @@ export function AdminPage() {
 		});
 
 		if (!res.ok) {
-			setLoginError(res.status === 401 ? 'Incorrect password' : 'Login failed, please try again');
+			// surface the server's message for non-401s (e.g. the 429 lockout)
+			// instead of the generic line
+			const data = await res.json().catch(() => null);
+			setLoginError(res.status === 401 ? 'Incorrect password' : data?.error || 'Login failed, please try again');
 			return;
 		}
 

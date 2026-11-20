@@ -58,17 +58,63 @@ function adminAuthMiddleware(req: express.Request, res: express.Response, next: 
 }
 
 /**
+ * ===== LOGIN RATE LIMIT =====
+ * The admin password is a single shared secret, so the login endpoint is
+ * the obvious brute-force target. Five failed logins from one IP lock that
+ * IP out for fifteen minutes; a successful login clears the record. No
+ * dependency — this is a small in-memory map, and the admin logs in rarely.
+ * The app runs behind Caddy with trust proxy set, so req.ip is the real
+ * client IP, not the proxy's.
+ */
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+
+type LoginAttempts = { failures: number; lockedUntil: number | null };
+const loginAttempts = new Map<string, LoginAttempts>();
+
+// the lock timestamp for this IP, or null when it can try again — an
+// expired lock is cleared so the next failure starts a fresh count
+function loginLockedUntil(ip: string): number | null {
+	const record = loginAttempts.get(ip);
+	if (!record) return null;
+	if (record.lockedUntil !== null && Date.now() >= record.lockedUntil) {
+		loginAttempts.delete(ip);
+		return null;
+	}
+	return record.lockedUntil;
+}
+
+function recordFailedLogin(ip: string) {
+	const record = loginAttempts.get(ip) ?? { failures: 0, lockedUntil: null };
+	record.failures += 1;
+	if (record.failures >= MAX_LOGIN_ATTEMPTS) {
+		record.lockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
+		logError(`Admin login locked out from ${ip} after ${MAX_LOGIN_ATTEMPTS} failures`);
+	}
+	loginAttempts.set(ip, record);
+}
+
+/**
  * ===== LOGIN =====
  */
 router.post('/login', (req, res) => {
 	const { password } = req.body;
+	const ip = req.ip ?? 'unknown';
+
+	const lockedUntil = loginLockedUntil(ip);
+	if (lockedUntil !== null) {
+		res.set('Retry-After', String(Math.ceil((lockedUntil - Date.now()) / 1000)));
+		return res.status(429).json({ error: 'Too many login attempts, try again later' });
+	}
 
 	if (password !== ADMIN_PASSWORD) {
-		logError(`Admin login failed from ${req.ip}`);
+		logError(`Admin login failed from ${ip}`);
+		recordFailedLogin(ip);
 		return res.status(401).json({ error: 'Invalid password' });
 	}
 
-	logInfo(`Admin login succeeded from ${req.ip}`);
+	loginAttempts.delete(ip);
+	logInfo(`Admin login succeeded from ${ip}`);
 	const token = createToken();
 	res.json({ token });
 });
