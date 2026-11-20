@@ -1,4 +1,5 @@
-import type { StatusEvent } from './util/Util';
+// keep the .js extension: the server imports this type under nodenext
+import type { StatusEvent } from './util/Util.js';
 
 export type AppInitialData = {
 	trailStatus: string;

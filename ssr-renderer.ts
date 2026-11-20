@@ -1,11 +1,6 @@
-type AppInitialData = {
-	trailStatus: string;
-	lastCheck: string;
-	statusSince: { status: 'Open' | 'Closed'; at: string; source: 'auto' | 'manual' | 'email' } | null;
-	captchaCode: number;
-	renderedAt: number;
-	siteUrl: string;
-};
+// the client owns this shape — it renders the app and parses the JSON on
+// hydration — so the server imports it instead of keeping a second copy
+import type { AppInitialData } from './client/src/App/app-data.js';
 
 type ServerRenderer = {
 	renderApp: (url: string, initialData: AppInitialData) => { markup: string; styles: string; metadata: string };
