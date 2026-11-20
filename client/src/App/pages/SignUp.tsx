@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import MarkEmailReadRounded from '@mui/icons-material/MarkEmailReadRounded';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import { Alert, Box, Button, Collapse, FormControlLabel, Link, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
-import { Captcha } from '../components/Captcha';
+import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/CaptchaField';
 import { StatusCard } from '../components/StatusCard';
-import { cleanPhoneNumber, extractEmailAddress, formatPhoneNumber, getRandomInt, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
+import { cleanPhoneNumber, extractEmailAddress, formatPhoneNumber, StatusEvent, StatusHistory, TRAIL_PAGE_URL } from '../util/Util';
 import type { AppInitialData } from '../app-data';
 
 interface FormValues {
@@ -23,7 +23,7 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 	const [statusLoading, setStatusLoading] = useState(!initialData);
 	const [statusSince, setStatusSince] = useState<StatusEvent | null>(initialData?.statusSince ?? null);
 	const [now, setNow] = useState(initialData?.renderedAt ?? Date.now());
-	const captchaCode = useRef(initialData?.captchaCode ?? getRandomInt(1000, 9999));
+	const captcha = useCaptcha(initialData?.captchaCode);
 
 	const {
 		register,
@@ -68,13 +68,11 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 			.catch((error) => console.error('Failed to fetch status history:', error));
 	}, []);
 
-	const verifyCaptcha = (value: string) => parseInt(value) === captchaCode.current;
-
 	const onSubmit = async (data: FormValues) => {
 		setRegError('');
 
-		if (!verifyCaptcha(data.captcha)) {
-			setError('captcha', { type: 'manual', message: 'Please enter the number shown' });
+		if (!captcha.verify(data.captcha)) {
+			setError('captcha', { type: 'manual', message: CAPTCHA_MESSAGE });
 			return;
 		} else {
 			clearErrors('captcha');
@@ -195,37 +193,7 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 									</Collapse>
 								</Box>
 
-								<Box>
-									<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-										Enter the number below to show you're human
-									</Typography>
-									<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-start' } }}>
-										<Box
-											sx={{
-												border: 1,
-												borderColor: 'divider',
-												borderRadius: '10px',
-												bgcolor: 'action.hover',
-												color: 'primary.main',
-												px: 1,
-												display: 'flex',
-												justifyContent: 'center',
-												flexShrink: 0
-											}}>
-											<Captcha chars={captchaCode.current.toString()} />
-										</Box>
-										<TextField
-											{...register('captcha', { required: 'Please enter the number shown' })}
-											required
-											id="captcha"
-											type="number"
-											label="Code"
-											inputMode="numeric"
-											error={!!errors.captcha}
-											helperText={errors.captcha?.message}
-										/>
-									</Stack>
-								</Box>
+								<CaptchaField chars={captcha.chars} fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })} error={errors.captcha?.message} />
 
 								<Button variant="contained" size="large" type="submit" disabled={isSubmitting}>
 									{isSubmitting ? 'Signing up…' : 'Sign up for alerts'}

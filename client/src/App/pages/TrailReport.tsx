@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
-import { Captcha } from '../components/Captcha';
+import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/CaptchaField';
 import { TrailStatusBanner, type TrailStatusState } from '../components/TrailStatusBanner';
-import { getRandomInt } from '../util/Util';
 
 type ReportType = 'status' | 'issue';
 
@@ -22,7 +21,7 @@ export const TrailReportPage: React.FC = () => {
 	const [submitted, setSubmitted] = useState(false);
 	const [submitError, setSubmitError] = useState('');
 	const [status, setStatus] = useState<TrailStatusState>('loading');
-	const captchaCode = useRef(getRandomInt(1000, 9999));
+	const captcha = useCaptcha();
 
 	// what the site currently shows, so a reporter can compare it with the signs
 	const fetchStatus = useCallback(async () => {
@@ -64,8 +63,8 @@ export const TrailReportPage: React.FC = () => {
 
 	const onSubmit = async (data: FormValues) => {
 		setSubmitError('');
-		if (parseInt(data.captcha, 10) !== captchaCode.current) {
-			setError('captcha', { type: 'manual', message: 'Please enter the number shown' });
+		if (!captcha.verify(data.captcha)) {
+			setError('captcha', { type: 'manual', message: CAPTCHA_MESSAGE });
 			return;
 		}
 		clearErrors('captcha');
@@ -182,36 +181,7 @@ export const TrailReportPage: React.FC = () => {
 							})}
 						/>
 
-						<Box>
-							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-								Enter the number below to show you're human
-							</Typography>
-							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-start' } }}>
-								<Box
-									sx={{
-										border: 1,
-										borderColor: 'divider',
-										borderRadius: '10px',
-										bgcolor: 'action.hover',
-										color: 'primary.main',
-										px: 1,
-										display: 'flex',
-										justifyContent: 'center',
-										flexShrink: 0
-									}}>
-									<Captcha chars={captchaCode.current.toString()} />
-								</Box>
-								<TextField
-									{...register('captcha', { required: 'Please enter the number shown' })}
-									required
-									label="Code"
-									type="number"
-									inputMode="numeric"
-									error={!!errors.captcha}
-									helperText={errors.captcha?.message}
-								/>
-							</Stack>
-						</Box>
+						<CaptchaField chars={captcha.chars} fieldProps={register('captcha', { required: CAPTCHA_MESSAGE })} error={errors.captcha?.message} />
 
 						<Button variant="contained" size="large" type="submit" disabled={isSubmitting}>
 							{isSubmitting ? 'Sending report…' : 'Send report'}
