@@ -10,8 +10,6 @@
 		"moduleResolution": "nodenext",
 		"resolveJsonModule": true,
 		"isolatedModules": true,
-		"noImplicitAny": false,
-		"strictNullChecks": false,
 		"outDir": "dist"
 	},
 	"include": ["*.ts", "private/*.ts"],

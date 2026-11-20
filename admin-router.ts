@@ -2,7 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { OverrideValue, readOverride, writeOverride } from './override-util.js';
 import Checker from './checker.js';
-import DbUtil from './db.js';
+import DbUtil, { User } from './db.js';
 import { getLatestLogId, getLogEntries, logError, logInfo } from './logger.js';
 
 const router = express.Router();
@@ -14,7 +14,7 @@ let checker: Checker;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
 const ADMIN_SECRET = process.env.ADMIN_SECRET!;
 
-async function findAdminUser() {
+async function findAdminUser(): Promise<{ admin: User } | { status: number; error: string }> {
 	const adminEmail = process.env.SMTP_ADMIN_EMAIL;
 	if (!adminEmail) {
 		return { status: 500, error: 'SMTP_ADMIN_EMAIL is not configured' };

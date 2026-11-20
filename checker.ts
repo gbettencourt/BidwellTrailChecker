@@ -61,7 +61,12 @@ export default class Checker {
 
 		this.config.checking = true;
 		try {
-			const response = await fetch(process.env.TRAIL_STATUS_URL);
+			const statusUrl = process.env.TRAIL_STATUS_URL;
+			if (!statusUrl) {
+				this.reportCheckFailure('TRAIL_STATUS_URL is not configured');
+				return;
+			}
+			const response = await fetch(statusUrl);
 			if (!response.ok) {
 				this.reportCheckFailure(`status page returned HTTP ${response.status}`);
 				return;
@@ -219,7 +224,7 @@ export default class Checker {
 		});
 	}
 
-	sendNewUserNotification(email: string, phone: string, existingUser: User) {
+	sendNewUserNotification(email: string, phone: string, existingUser: User | undefined) {
 		return this.sendMail({
 			to: process.env.SMTP_ADMIN_EMAIL,
 			subject: existingUser ? 'User updated' : 'New user registered',
@@ -259,7 +264,11 @@ export default class Checker {
 	}
 
 	// never rejects, so callers can fire and forget without an unhandled rejection crashing the process
-	async sendMail(mail: { to: string; subject: string; text: string; html?: string; headers?: Record<string, string> }) {
+	async sendMail(mail: { to: string | undefined; subject: string; text: string; html?: string; headers?: Record<string, string> }) {
+		if (!mail.to) {
+			logError(`cannot send email "${mail.subject}": no recipient address configured`);
+			return;
+		}
 		try {
 			const info = await this.getTransporter().sendMail({ from: process.env.SMTP_FROM_EMAIL, ...mail });
 			logInfo(`Message sent: ${info.messageId} to ${mail.to} ("${mail.subject}")`);

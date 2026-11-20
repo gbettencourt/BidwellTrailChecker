@@ -7,13 +7,17 @@ import type { User } from './db.js';
  * Uses ADMIN_SECRET, so changing that secret invalidates links in emails already sent.
  */
 export function unsubscribeToken(user: Pick<User, 'id' | 'email'>) {
+	const secret = process.env.ADMIN_SECRET;
+	if (!secret) {
+		throw new Error('ADMIN_SECRET is not configured');
+	}
 	return crypto
-		.createHmac('sha256', process.env.ADMIN_SECRET)
+		.createHmac('sha256', secret)
 		.update(`unsubscribe:${user.id}:${user.email.toLowerCase()}`)
 		.digest('base64url');
 }
 
-export function verifyUnsubscribeToken(user: Pick<User, 'id' | 'email'>, token: string) {
+export function verifyUnsubscribeToken(user: Pick<User, 'id' | 'email'>, token: string | undefined) {
 	const expected = Buffer.from(unsubscribeToken(user));
 	const actual = Buffer.from(String(token ?? ''));
 	return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
