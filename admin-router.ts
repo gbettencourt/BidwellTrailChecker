@@ -57,16 +57,6 @@ function adminAuthMiddleware(req: express.Request, res: express.Response, next: 
 	next();
 }
 
-/**
- * ===== LOGIN RATE LIMIT =====
- * The admin password is a single shared secret, so the login endpoint is
- * the obvious brute-force target. Five failed logins lock the endpoint for
- * fifteen minutes; a successful login clears the count, and an expired
- * lock clears itself so the next failure starts a fresh count. One global
- * lock, not per IP — the admin logs in rarely, so simple beats tracking
- * addresses. The trade-off: an attacker can lock the admin out by failing
- * five times, and a restart clears it.
- */
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
 
