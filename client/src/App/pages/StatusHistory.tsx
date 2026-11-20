@@ -5,6 +5,7 @@ import { Alert, Box, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableH
 import type { Theme } from '@mui/material/styles';
 import { formatDuration } from '../util/Util';
 import type { StatusEvent, StatusHistory as History } from '../../../../shared-types.js';
+import { formatDateLocal } from '../../../../shared/format-date-local.js';
 import { apiGet } from '../util/api';
 
 const DAYS = 90;
@@ -19,11 +20,20 @@ const HATCH = 'repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 2px, tr
 type DayState = 'open' | 'closed' | 'none';
 type Day = { start: Date; state: DayState; closedMs: number; openMs: number };
 
-const dayFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-const shortDayFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-const longDayFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const dateFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+const LA_TIME_ZONE = 'America/Los_Angeles';
+
+const dayFormat = new Intl.DateTimeFormat('en-US', { timeZone: LA_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' });
+const shortDayFormat = new Intl.DateTimeFormat('en-US', { timeZone: LA_TIME_ZONE, month: 'short', day: 'numeric' });
+const longDayFormat = new Intl.DateTimeFormat('en-US', { timeZone: LA_TIME_ZONE, month: 'short', day: 'numeric', year: 'numeric' });
+const dateFormat = new Intl.DateTimeFormat('en-US', {
+	timeZone: LA_TIME_ZONE,
+	weekday: 'short',
+	month: 'short',
+	day: 'numeric',
+	year: 'numeric'
+});
 const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
+	timeZone: LA_TIME_ZONE,
 	weekday: 'short',
 	month: 'short',
 	day: 'numeric',
@@ -37,35 +47,60 @@ const SOURCE_NOTES: Partial<Record<StatusEvent['source'], string>> = {
 	email: 'from past alert emails'
 };
 
-/** Split the event timeline into the last DAYS local days, measuring time open and closed in each. */
-function buildDays(events: StatusEvent[], now = Date.now()): Day[] {
+// local time-of-day of an instant in Chico time, for pinning day boundaries to Chico midnight
+const laClockFormat = new Intl.DateTimeFormat('en-US', {
+	timeZone: LA_TIME_ZONE,
+	hourCycle: 'h23',
+	hour: '2-digit',
+	minute: '2-digit',
+	second: '2-digit'
+});
+
+// instant of midnight starting the given Chico calendar day (YYYY-MM-DD).
+// The UTC offset is constant between noon on the previous day and midnight
+// on this one (Chico flips clocks at 02:00 local), so midnight is the
+// previous noon plus the rest of that local day.
+const laMidnightMs = (date: string): number => {
+	const prevNoonUtc = Date.parse(`${shiftDate(date, -1)}T12:00:00Z`);
+	const parts = laClockFormat.formatToParts(new Date(prevNoonUtc));
+	const value = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+	const elapsedMs = ((value('hour') * 60 + value('minute')) * 60 + value('second')) * 1000;
+	return prevNoonUtc + (86400000 - elapsedMs);
+};
+
+// shift a YYYY-MM-DD date by n days in calendar space (a 23/25-hour DST day still shifts by exactly one date)
+const shiftDate = (date: string, days: number): string => {
+	const [year, month, day] = date.split('-').map(Number);
+	return new Date(Date.UTC(year, month - 1, day) + days * 86400000).toISOString().slice(0, 10);
+};
+
+/** Split the event timeline into the last DAYS Chico days, measuring time open and closed in each. */
+export function buildDays(events: StatusEvent[], now = Date.now()): Day[] {
 	const intervals = events.map((event, i) => ({
 		status: event.status,
 		start: Date.parse(event.at),
 		end: i + 1 < events.length ? Date.parse(events[i + 1].at) : now
 	}));
 
-	const today = new Date(now);
-	today.setHours(0, 0, 0, 0);
+	const today = formatDateLocal(new Date(now));
 
 	return Array.from({ length: DAYS }, (_, i) => {
-		const start = new Date(today);
-		start.setDate(today.getDate() - (DAYS - 1 - i));
-		const end = new Date(start);
-		end.setDate(start.getDate() + 1);
-		const dayEnd = Math.min(end.getTime(), now);
+		const date = shiftDate(today, i - (DAYS - 1));
+		const start = laMidnightMs(date);
+		const end = laMidnightMs(shiftDate(date, 1));
+		const dayEnd = Math.min(end, now);
 
 		let closedMs = 0;
 		let openMs = 0;
 		for (const interval of intervals) {
-			const overlap = Math.min(interval.end, dayEnd) - Math.max(interval.start, start.getTime());
+			const overlap = Math.min(interval.end, dayEnd) - Math.max(interval.start, start);
 			if (overlap <= 0) continue;
 			if (interval.status === 'Closed') closedMs += overlap;
 			else openMs += overlap;
 		}
 
 		const state: DayState = closedMs + openMs === 0 ? 'none' : closedMs > openMs ? 'closed' : 'open';
-		return { start, state, closedMs, openMs };
+		return { start: new Date(start), state, closedMs, openMs };
 	});
 }
 

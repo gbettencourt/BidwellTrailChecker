@@ -20,6 +20,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { haversineM as haversineMeters } from '../shared/haversine.ts';
+import { TRAIL_INFO } from '../client/src/App/data/trailInfo.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -39,18 +40,9 @@ const pathLengthM = (coords) => {
 	return total;
 };
 
-// local names / always-open flags from trailInfo.ts (same source TrailMap uses)
-const parseTrailInfo = (text) => {
-	const info = {};
-	for (const m of text.matchAll(/'(way\/\d+)': \{([^}]*)\}/g)) {
-		const name = /name: '([^']+)'/.exec(m[2]);
-		info[m[1]] = { name: name?.[1] ?? null, alwaysOpen: m[2].includes('alwaysOpen: true') };
-	}
-	return info;
-};
-
-const trailTitle = (feature, info) => {
-	const local = info[String(feature.id)];
+// display name for a trail segment: its OSM / local name, or a generic label
+const trailTitle = (feature) => {
+	const local = TRAIL_INFO[String(feature.id)];
 	const name = feature.properties?.name ?? local?.name ?? null;
 	const alwaysOpen = feature.properties?.alwaysOpen ?? local?.alwaysOpen ?? false;
 	return name ?? (alwaysOpen ? 'Strava Town trail' : 'Unnamed trail');
@@ -157,11 +149,10 @@ const smooth = (values, window = 5) => {
 
 const main = async () => {
 	const geojson = JSON.parse(await readFile(join(root, 'client/public/trails.geojson'), 'utf8'));
-	const trailInfo = parseTrailInfo(await readFile(join(root, 'client/src/App/data/trailInfo.ts'), 'utf8'));
 
 	const groups = new Map();
 	for (const feature of geojson.features) {
-		const title = trailTitle(feature, trailInfo);
+		const title = trailTitle(feature);
 		if (title === 'Unnamed trail') continue;
 		const group = groups.get(title) ?? [];
 		group.push(feature.geometry.coordinates);
