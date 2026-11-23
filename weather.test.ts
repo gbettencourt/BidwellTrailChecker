@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { getDailyWeather, mergeSeries, parseDailyResponse, shiftDate } from './weather.js';
 import type { DayWeather } from './weather.js';
 
@@ -10,6 +10,24 @@ const day = (date: string, precipitationIn: number, sunshineHours: number, maxTe
 });
 
 describe('weather', () => {
+	// silence the logger's console dual-write during tests: the stale-cache
+	// test deliberately triggers a refresh failure, and the warning it logs
+	// is expected behavior, not test output worth printing
+	let originalConsole: { log: typeof console.log; warn: typeof console.warn; error: typeof console.error };
+
+	beforeAll(() => {
+		originalConsole = { log: console.log, warn: console.warn, error: console.error };
+		console.log = () => {};
+		console.warn = () => {};
+		console.error = () => {};
+	});
+
+	afterAll(() => {
+		console.log = originalConsole.log;
+		console.warn = originalConsole.warn;
+		console.error = originalConsole.error;
+	});
+
 	describe('shiftDate', () => {
 		test('shifts a local date by days', () => {
 			expect(shiftDate('2026-11-16', -7)).toBe('2026-11-09');
