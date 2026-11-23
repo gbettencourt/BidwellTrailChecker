@@ -3,3 +3,20 @@ body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
+
+/* Topographic background (real park contours + Upper Park trails, Strava Town excluded), large screens only. */
+@media (min-width: 1024px) {
+	body {
+		background-image: url('/topo-bg-light.svg');
+		background-size: cover;
+		background-position: center;
+		background-attachment: fixed;
+		background-repeat: no-repeat;
+	}
+}
+
+@media (min-width: 1024px) and (prefers-color-scheme: dark) {
+	body {
+		background-image: url('/topo-bg-dark.svg');
+	}
+}
