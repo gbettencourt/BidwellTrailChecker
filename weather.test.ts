@@ -88,5 +88,70 @@ describe('weather', () => {
 			expect(second).toEqual(first);
 			expect(fetchImpl).toHaveBeenCalledTimes(2);
 		});
+
+		test('retries a fetch that times out once, then succeeds', async () => {
+			let calls = 0;
+			const fetchImpl = vi.fn(async (url: string) => {
+				calls++;
+				const isArchive = url.includes('archive-api');
+				// the archive's first attempt times out, exactly what the
+				// Pi logged: [DOMException [TimeoutError]]
+				if (isArchive && calls === 1) throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+				return {
+					ok: true,
+					json: async () => ({
+						daily: {
+							time: isArchive ? ['2026-11-16', '2026-11-17'] : ['2026-11-17', '2026-11-18'],
+							precipitation_sum: isArchive ? [0.5, 0] : [0, 0],
+							temperature_2m_max: isArchive ? [50, 52] : [52, 54],
+							sunshine_duration: isArchive ? [0, 7200] : [7200, 28800]
+						}
+					})
+				};
+			}) as unknown as typeof fetch;
+
+			const days = await getDailyWeather('2026-11-07', fetchImpl);
+			expect(days.map((d) => d.date)).toEqual(['2026-11-16', '2026-11-17', '2026-11-18']);
+			expect(fetchImpl).toHaveBeenCalledTimes(3);
+		});
+
+		test('serves the stale cached series when the refresh fails after expiry', async () => {
+			const okFetch = vi.fn(async (url: string) => {
+				const isArchive = url.includes('archive-api');
+				return {
+					ok: true,
+					json: async () => ({
+						daily: {
+							time: isArchive ? ['2026-11-16'] : ['2026-11-17'],
+							precipitation_sum: [0],
+							temperature_2m_max: [52],
+							sunshine_duration: [7200]
+						}
+					})
+				};
+			}) as unknown as typeof fetch;
+
+			const first = await getDailyWeather('2026-11-06', okFetch);
+			expect(first.map((d) => d.date)).toEqual(['2026-11-16', '2026-11-17']);
+
+			// two hours later the cache is expired, and Open-Meteo times out
+			const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 2 * 60 * 60 * 1000);
+			try {
+				const failingFetch = vi.fn(async () => {
+					throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+				}) as unknown as typeof fetch;
+				const stale = await getDailyWeather('2026-11-06', failingFetch);
+				expect(stale).toEqual(first);
+			} finally {
+				nowSpy.mockRestore();
+			}
+		});
+
+		test('still throws, naming the endpoint, when there is no cached series', async () => {
+			const failingFetch = vi.fn(async () => {
+				throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+			}) as unknown as typeof fetch;
+			await expect(getDailyWeather('2026-11-05', failingFetch)).rejects.toThrow(/open-meteo\.com/);
+		});
 	});
 });
