@@ -18,6 +18,7 @@ export type DayWeather = {
 };
 
 import { formatDateLocal } from './shared/format-date-local.js';
+import { logWarn } from './logger.js';
 
 const LAT = 39.7285;
 const LON = -121.8375;
@@ -26,6 +27,10 @@ const DAILY = 'precipitation_sum,temperature_2m_max,sunshine_duration';
 const UNITS = 'temperature_unit=fahrenheit&precipitation_unit=inch';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 10_000;
+// one retry: a cold-cache fetch that times out once (the archive endpoint
+// is slow enough to hit the 10 s timeout) usually succeeds on the next
+// try, and a retry in here saves the visitor a manual refresh
+const FETCH_ATTEMPTS = 2;
 
 type CachedSeries = { days: DayWeather[]; fetchedAt: number };
 const cache = new Map<string, CachedSeries>();
@@ -83,14 +88,27 @@ export function mergeSeries(past: DayWeather[], forecast: DayWeather[]): DayWeat
 }
 
 async function fetchDaily(url: string, fetchImpl: typeof fetch): Promise<DayWeather[]> {
-	const res = await fetchImpl(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-	if (!res.ok) throw new Error(`Open-Meteo request failed: HTTP ${res.status}`);
-	return parseDailyResponse(await res.json());
+	let lastError: unknown;
+	for (let attempt = 0; attempt < FETCH_ATTEMPTS; attempt++) {
+		try {
+			const res = await fetchImpl(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+			if (!res.ok) throw new Error(`Open-Meteo request failed: HTTP ${res.status}`);
+			return parseDailyResponse(await res.json());
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	// name the endpoint in the error, so the server log shows whether the
+	// archive or the forecast timed out instead of a bare TimeoutError
+	throw new Error(`Open-Meteo request failed (${url}): ${lastError instanceof Error ? lastError.message : lastError}`);
 }
 
 /**
  * Daily weather from startDate through the 7-day forecast, oldest first.
  * `fetchImpl` exists so tests can stub the network; callers use the default.
+ * If the refresh fails and a previous series is cached, even an expired
+ * one, serve that instead of throwing: a stale estimate beats no estimate,
+ * and the next call retries the refresh (fetchedAt is left untouched).
  */
 export async function getDailyWeather(startDate: string, fetchImpl: typeof fetch = fetch): Promise<DayWeather[]> {
 	const today = localToday();
@@ -104,8 +122,16 @@ export async function getDailyWeather(startDate: string, fetchImpl: typeof fetch
 		`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
 		`&forecast_days=7&daily=${DAILY}&${UNITS}&timezone=${encodeURIComponent(TIMEZONE)}`;
 
-	const [past, forecast] = await Promise.all([fetchDaily(archiveUrl, fetchImpl), fetchDaily(forecastUrl, fetchImpl)]);
-	const days = mergeSeries(past, forecast);
-	cache.set(startDate, { days, fetchedAt: Date.now() });
-	return days;
+	try {
+		const [past, forecast] = await Promise.all([fetchDaily(archiveUrl, fetchImpl), fetchDaily(forecastUrl, fetchImpl)]);
+		const days = mergeSeries(past, forecast);
+		cache.set(startDate, { days, fetchedAt: Date.now() });
+		return days;
+	} catch (error) {
+		if (cached) {
+			logWarn('Weather refresh failed, serving stale cached series', error);
+			return cached.days;
+		}
+		throw error;
+	}
 }
