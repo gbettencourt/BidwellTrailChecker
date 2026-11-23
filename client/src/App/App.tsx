@@ -99,12 +99,14 @@ const NAV_ITEMS: { label: string; to: string; icon?: ReactNode }[] = [
 ];
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-	const isMap = useLocation().pathname.toLowerCase() === '/map';
+	const pathname = useLocation().pathname;
+	const isMap = pathname.toLowerCase() === '/map';
+	const isHome = pathname === '/';
 	const [navAnchor, setNavAnchor] = useState<HTMLElement | null>(null);
 	const navOpen = Boolean(navAnchor);
 
 	return (
-		<Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+		<Box className={isHome ? 'topo-background' : undefined} sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 			<AppBar
 				position="sticky"
 				color="transparent"
