@@ -33,6 +33,20 @@ describe('StatusCard', () => {
 			</MemoryRouter>
 		);
 
+	// the Closed card fetches /api/reopening in an effect; stub fetch so the
+	// test never hits the network, and await the call so the state updates
+	// it triggers settle inside act() instead of warning after the test
+	let fetchMock: ReturnType<typeof vi.fn>;
+
+	beforeEach(() => {
+		fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ available: false }) }));
+		vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
 	it('shows the open status and when it was checked', () => {
 		renderCard();
 		expect(screen.getByText('Open')).toBeInTheDocument();
@@ -41,10 +55,11 @@ describe('StatusCard', () => {
 		expect(screen.getByRole('link', { name: 'View history →' })).toHaveAttribute('href', '/history');
 	});
 
-	it('shows the closed status with how long it has been closed', () => {
+	it('shows the closed status with how long it has been closed', async () => {
 		renderCard({ status: 'Closed', since: '2026-11-15T10:00:00Z' });
 		expect(screen.getByText('Closed')).toBeInTheDocument();
 		expect(screen.getByText('Closed since Sun, Nov 15 (10 hours)')).toBeInTheDocument();
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
 	});
 
 	it('shows Unknown and a fallback message when the status is not known', () => {
