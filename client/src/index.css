@@ -4,10 +4,17 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 }
 
-/* Topographic background (real park contours + Upper Park trails, Strava Town excluded), large screens only. */
+/* Topographic background (real park contours + Upper Park trails, Strava Town excluded), home page only.
+   A wash of the theme background sits over the artwork so text — including the translucent status card —
+   stays readable; the wash follows the color scheme via the theme variable. */
 @media (min-width: 1024px) {
-	body {
-		background-image: url('/topo-bg-light.svg');
+	.topo-background {
+		background-image:
+			linear-gradient(
+				rgba(var(--mui-palette-background-defaultChannel) / 0.75),
+				rgba(var(--mui-palette-background-defaultChannel) / 0.75)
+			),
+			url('/topo-bg-light.svg');
 		background-size: cover;
 		background-position: center;
 		background-attachment: fixed;
@@ -16,7 +23,12 @@ body {
 }
 
 @media (min-width: 1024px) and (prefers-color-scheme: dark) {
-	body {
-		background-image: url('/topo-bg-dark.svg');
+	.topo-background {
+		background-image:
+			linear-gradient(
+				rgba(var(--mui-palette-background-defaultChannel) / 0.75),
+				rgba(var(--mui-palette-background-defaultChannel) / 0.75)
+			),
+			url('/topo-bg-dark.svg');
 	}
 }
