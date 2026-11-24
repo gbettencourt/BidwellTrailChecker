@@ -20,6 +20,8 @@ const LOOKBACK_DAYS = 7;
 const DRYING_PER_DAY_IN = 0.7;
 // a day counts as sunny at 6+ hours of sunshine
 const SUNNY_HOURS = 6;
+// wetness saturates: beyond this, extra rain runs off instead of adding drying time
+const MAX_WETNESS_IN = 3;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -47,6 +49,7 @@ export function estimateReopening(days: DayWeather[], closedSince: string, today
 	for (const day of sorted) {
 		if (day.date < start) continue;
 		wetness = Math.max(0, wetness + day.precipitationIn - dryingInches(day));
+		wetness = Math.min(wetness, MAX_WETNESS_IN);
 		if (day.date >= closedSince.slice(0, 10)) wetAtClosure = Math.max(wetAtClosure, wetness);
 		if (estimatedDate === null && day.date >= today && wetAtClosure > 0 && wetness === 0) {
 			estimatedDate = day.date;
