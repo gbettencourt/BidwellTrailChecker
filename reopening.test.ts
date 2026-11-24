@@ -85,6 +85,36 @@ describe('reopening', () => {
 			expect(estimate.rainInches).toBe(2);
 		});
 
+		test('caps wetness after a long wet spell, so a dry stretch reopens in days not weeks', () => {
+			const days = [
+				...Array.from({ length: 10 }, (_, i) => {
+					const d = new Date('2025-12-16T12:00:00');
+					d.setDate(d.getDate() + i);
+					return day(d.toISOString().slice(0, 10), 1.5, 0, 50);
+				}),
+				day('2025-12-26', 0, 8, 70),
+				day('2025-12-27', 0, 8, 70),
+				day('2025-12-28', 0, 8, 70),
+				day('2025-12-29', 0, 8, 70),
+				day('2025-12-30', 0, 8, 70),
+				day('2025-12-31', 0, 8, 70)
+			];
+			// 15 in of rain uncapped would take ~3 weeks to dry at 0.7 in/day;
+			// capped at 3 in it takes 5 dry days
+			const estimate = estimateReopening(days, '2025-12-16T10:00:00Z', '2025-12-26');
+			expect(estimate.estimatedDate).toBe('2025-12-30');
+		});
+
+		test('still returns no date when heavy rain keeps coming', () => {
+			const days = Array.from({ length: 11 }, (_, i) => {
+				const d = new Date('2026-11-16T12:00:00');
+				d.setDate(d.getDate() + i);
+				return day(d.toISOString().slice(0, 10), 2, 0, 50);
+			});
+			const estimate = estimateReopening(days, '2026-11-16T10:00:00Z', '2026-11-19');
+			expect(estimate.estimatedDate).toBeNull();
+		});
+
 		test('says today when there has been no rain since the closure', () => {
 			const days = [dry('2026-11-16'), dry('2026-11-17'), dry('2026-11-18'), dry('2026-11-19')];
 			const estimate = estimateReopening(days, '2026-11-16T10:00:00Z', '2026-11-19');
