@@ -3,6 +3,7 @@ import MarkEmailReadRounded from '@mui/icons-material/MarkEmailReadRounded';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import { Alert, Box, Button, Collapse, FormControlLabel, Link, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
+import { Link as RouterLink } from 'react-router-dom';
 import { CAPTCHA_MESSAGE, CaptchaField, useCaptcha } from '../components/CaptchaField';
 import { StatusCard } from '../components/StatusCard';
 import { useTrailStatus } from '../hooks/useTrailStatus';
@@ -194,6 +195,20 @@ export const SignUp: React.FC<{ initialData?: AppInitialData }> = ({ initialData
 					</>
 				)}
 			</Paper>
+
+			<Typography sx={{ px: { xs: 0.5, sm: 1 } }}>
+				Bidwell Trail Checker shows whether the trails in Upper Bidwell Park are open or closed, for mountain bikers in Chico,
+				California. The status comes from the City of Chico and is checked every 15 minutes — sign up for an email or text alert and
+				you&apos;ll know the moment it changes. The{' '}
+				<Link component={RouterLink} to="/map">
+					map
+				</Link>{' '}
+				shows the 23 bike-legal trails, including the ones that stay open when the rest of the park is closed, and the{' '}
+				<Link component={RouterLink} to="/history">
+					history page
+				</Link>{' '}
+				records every opening and closure back to January 2020.
+			</Typography>
 
 			<Stack direction="row" spacing={1.25} sx={{ px: { xs: 0.5, sm: 1 }, color: 'text.secondary' }}>
 				<InfoOutlined fontSize="small" sx={{ mt: '2px' }} />
