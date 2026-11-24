@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { buildDays } from './StatusHistory';
-import type { StatusEvent } from '../../../../shared-types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { buildDays, StatusHistory } from './StatusHistory';
+import type { StatusEvent, StatusHistory as History } from '../../../../shared-types';
 
 const HOUR_MS = 3600000;
 
@@ -49,5 +50,54 @@ describe('StatusHistory', () => {
 		const nov1 = days.find((d) => d.start.toISOString() === '2026-11-01T07:00:00.000Z');
 		expect(nov1?.closedMs).toBe(25 * HOUR_MS);
 		expect(nov1?.state).toBe('closed');
+	});
+});
+
+describe('StatusHistory pagination', () => {
+	// n events, one a day back from Nov 20, 2026, alternating status
+	const makeHistory = (n: number): History => {
+		const events: StatusEvent[] = Array.from({ length: n }, (_, i) => ({
+			status: i % 2 === 0 ? 'Closed' : 'Open',
+			at: new Date(Date.parse('2026-11-20T12:00:00Z') - (n - 1 - i) * 24 * HOUR_MS).toISOString(),
+			source: 'auto' as const
+		}));
+		return {
+			current: events[events.length - 1],
+			trackedSince: events[0].at,
+			stats: { avgClosureMs: null, closuresLast90Days: n },
+			events
+		};
+	};
+
+	let fetchMock: ReturnType<typeof vi.fn>;
+
+	beforeEach(() => {
+		fetchMock = vi.fn(async () => ({ ok: true, json: async () => makeHistory(3) }));
+		vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('shows 20 changes per page with a page count', async () => {
+		fetchMock.mockResolvedValue({ ok: true, json: async () => makeHistory(25) });
+		render(<StatusHistory />);
+		await waitFor(() => expect(screen.getByText('Recent changes')).toBeInTheDocument());
+		// header row + 20 change rows
+		expect(screen.getAllByRole('row')).toHaveLength(21);
+		expect(screen.getByText('Showing 1–20 of 25')).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Go to page 2' }));
+		await waitFor(() => expect(screen.getByText('Showing 21–25 of 25')).toBeInTheDocument());
+		expect(screen.getAllByRole('row')).toHaveLength(6);
+	});
+
+	it('shows no pagination when everything fits on one page', async () => {
+		render(<StatusHistory />);
+		await waitFor(() => expect(screen.getByText('Recent changes')).toBeInTheDocument());
+		expect(screen.getAllByRole('row')).toHaveLength(4);
+		expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
+		expect(screen.queryByLabelText('Recent changes pages')).not.toBeInTheDocument();
 	});
 });
