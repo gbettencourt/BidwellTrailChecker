@@ -1,7 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import DoNotDisturbOnRounded from '@mui/icons-material/DoNotDisturbOnRounded';
-import { Alert, Box, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
+import {
+	Alert,
+	Box,
+	Pagination,
+	Paper,
+	Skeleton,
+	Stack,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableRow,
+	Tooltip,
+	Typography
+} from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 import { formatDuration } from '../util/Util';
 import type { StatusEvent, StatusHistory as History } from '../../../../shared-types.js';
@@ -9,6 +23,7 @@ import { formatDateLocal } from '../../../../shared/format-date-local.js';
 import { apiGet } from '../util/api';
 
 const DAYS = 90;
+const PAGE_SIZE = 20;
 
 // Validated for colorblind separation against the light and dark surfaces (closed is also hatched)
 const DAY_COLORS = {
@@ -159,6 +174,7 @@ const LegendSwatch: React.FC<{ state: DayState; label: string }> = ({ state, lab
 export const StatusHistory: React.FC = () => {
 	const [history, setHistory] = useState<History>();
 	const [error, setError] = useState(false);
+	const [page, setPage] = useState(1);
 
 	useEffect(() => {
 		apiGet<History>('/api/statushistory')
@@ -183,6 +199,11 @@ export const StatusHistory: React.FC = () => {
 			}))
 			.reverse();
 	}, [history]);
+
+	// the list is long now (117 events back to 2020), so show one page at a time
+	const pageCount = Math.max(1, Math.ceil(changes.length / PAGE_SIZE));
+	const safePage = Math.min(page, pageCount);
+	const pageChanges = changes.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
 	const current = history?.current;
 
@@ -278,7 +299,7 @@ export const StatusHistory: React.FC = () => {
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									{changes.map((change) => (
+									{pageChanges.map((change) => (
 										<TableRow key={change.at}>
 											<TableCell>
 												<StatusLabel status={change.status} />
@@ -301,6 +322,24 @@ export const StatusHistory: React.FC = () => {
 								</TableBody>
 							</Table>
 						</Box>
+						{changes.length > PAGE_SIZE && (
+							<Stack
+								direction={{ xs: 'column', sm: 'row' }}
+								spacing={1.5}
+								sx={{ alignItems: 'center', justifyContent: 'space-between', px: { xs: 2.5, sm: 3 }, py: 2 }}>
+								<Typography variant="body2" color="text.secondary">
+									Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, changes.length)} of{' '}
+									{changes.length}
+								</Typography>
+								<Pagination
+									count={pageCount}
+									page={safePage}
+									onChange={(_e, value) => setPage(value)}
+									color="primary"
+									aria-label="Recent changes pages"
+								/>
+							</Stack>
+						)}
 					</Paper>
 				</>
 			)}
