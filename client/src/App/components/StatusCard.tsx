@@ -25,14 +25,23 @@ const localNoon = (date: string) => new Date(`${date}T12:00:00`);
 
 // the drying model is a rough guess, so the card shows a vague window
 // instead of an exact date — a specific day would imply more precision
-// than the model has
-const vagueEtaText = (etaDate: string | null, today = formatDateLocal(new Date())): string => {
+// than the model has. "This week" is the Monday–Sunday week containing
+// today: a date 4+ days out can already be next week, and calling that
+// "this week" is wrong
+export const vagueEtaText = (etaDate: string | null, today = formatDateLocal(new Date())): string => {
 	if (etaDate === null) return 'More than a week away';
 	const days = Math.round((localNoon(etaDate).getTime() - localNoon(today).getTime()) / DAY_MS);
 	if (days <= 0) return 'Today';
 	if (days === 1) return 'Tomorrow';
 	if (days <= 3) return 'In 2–3 days';
-	return 'Sometime this week';
+	const mondayOf = (date: string) => {
+		const d = localNoon(date);
+		d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+		return formatDateLocal(d);
+	};
+	if (mondayOf(etaDate) === mondayOf(today)) return 'Sometime this week';
+	if (days <= 7) return 'Next week';
+	return 'More than a week away';
 };
 
 const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
@@ -88,7 +97,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, lastCheck, loadi
 	}, [status, loading]);
 
 	const etaDate = estimate?.estimatedDate ?? null;
-	const etaText = vagueEtaText(etaDate);
+	const etaText = vagueEtaText(etaDate, formatDateLocal(new Date(now)));
 	const etaParts: string[] = [];
 	if (estimate) {
 		etaParts.push(`${estimate.rainInches} in of rain since ${sinceFormat.format(new Date(estimate.closedSince))}`);
