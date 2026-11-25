@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { StatusCard, formatLastCheck } from './StatusCard';
+import { StatusCard, formatLastCheck, vagueEtaText } from './StatusCard';
 
 const NOW = new Date('2026-11-15T20:00:00Z').getTime();
 
@@ -22,6 +22,34 @@ describe('formatLastCheck', () => {
 
 	it('falls back to a full date for older checks', () => {
 		expect(formatLastCheck('2026-11-10T20:00:00Z', NOW)).toBe('11/10/2026, 12:00:00 PM');
+	});
+});
+
+describe('vagueEtaText', () => {
+	it('uses the near buckets for today through 3 days out', () => {
+		expect(vagueEtaText('2026-11-25', '2026-11-25')).toBe('Today');
+		expect(vagueEtaText('2026-11-24', '2026-11-25')).toBe('Today');
+		expect(vagueEtaText('2026-11-26', '2026-11-25')).toBe('Tomorrow');
+		expect(vagueEtaText('2026-11-27', '2026-11-25')).toBe('In 2–3 days');
+		expect(vagueEtaText('2026-11-28', '2026-11-25')).toBe('In 2–3 days');
+	});
+
+	it('says sometime this week only for a date in the same Monday–Sunday week', () => {
+		// Wed Nov 25 → Sun Nov 29 is the same week; Mon Nov 30 is the next
+		expect(vagueEtaText('2026-11-29', '2026-11-25')).toBe('Sometime this week');
+		expect(vagueEtaText('2026-11-27', '2026-11-23')).toBe('Sometime this week');
+	});
+
+	it('says next week for a date in the following week, within 7 days', () => {
+		// the live case: Wed Nov 25 → Tue Dec 1 is 6 days out, next week
+		expect(vagueEtaText('2026-12-01', '2026-11-25')).toBe('Next week');
+		expect(vagueEtaText('2026-11-30', '2026-11-25')).toBe('Next week');
+		expect(vagueEtaText('2026-11-30', '2026-11-23')).toBe('Next week');
+	});
+
+	it('says more than a week away with no date, or one over 7 days out', () => {
+		expect(vagueEtaText(null, '2026-11-25')).toBe('More than a week away');
+		expect(vagueEtaText('2026-12-08', '2026-11-25')).toBe('More than a week away');
 	});
 });
 
@@ -76,13 +104,16 @@ describe('StatusCard', () => {
 });
 
 describe('StatusCard reopening estimate', () => {
-	// a YYYY-MM-DD string shifted by n days, in America/Los_Angeles,
-	// so the ETA tests stay valid no matter when they run
+	// fixed "today" is Wed Nov 25, 2026, so the week-boundary buckets are
+	// deterministic: the tests would pass some weekdays and fail others
+	// if they used the real today
+	const TODAY = '2026-11-25';
+	const ETA_NOW = new Date('2026-11-25T20:00:00Z').getTime();
+	// a YYYY-MM-DD string shifted by n days, in America/Los_Angeles
 	const datePlusDays = (date: string, days: number) => {
 		const [y, m, d] = date.split('-').map(Number);
 		return new Date(y, m - 1, d + days, 12).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 	};
-	const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
 	const estimate = {
 		available: true,
@@ -97,7 +128,7 @@ describe('StatusCard reopening estimate', () => {
 	const renderClosedCard = () =>
 		render(
 			<MemoryRouter>
-				<StatusCard status="Closed" lastCheck="2026-11-15T19:55:00Z" loading={false} since="2026-11-15T10:00:00Z" now={NOW} />
+				<StatusCard status="Closed" lastCheck="2026-11-15T19:55:00Z" loading={false} since="2026-11-15T10:00:00Z" now={ETA_NOW} />
 			</MemoryRouter>
 		);
 
@@ -111,7 +142,7 @@ describe('StatusCard reopening estimate', () => {
 	});
 
 	it('shows the estimated reopening with the weather behind it', async () => {
-		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(today(), 2) }) });
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(TODAY, 2) }) });
 		renderClosedCard();
 		await waitFor(() => expect(screen.getByText('Estimated reopening')).toBeInTheDocument());
 		expect(screen.getByText('In 2–3 days')).toBeInTheDocument();
@@ -121,21 +152,28 @@ describe('StatusCard reopening estimate', () => {
 	});
 
 	it('says Today when the estimate is today', async () => {
-		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: today() }) });
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: TODAY }) });
 		renderClosedCard();
 		await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
 	});
 
 	it('says Tomorrow when the estimate is tomorrow', async () => {
-		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(today(), 1) }) });
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(TODAY, 1) }) });
 		renderClosedCard();
 		await waitFor(() => expect(screen.getByText('Tomorrow')).toBeInTheDocument());
 	});
 
 	it('says sometime this week when the estimate is later in the week', async () => {
-		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(today(), 5) }) });
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(TODAY, 4) }) });
 		renderClosedCard();
 		await waitFor(() => expect(screen.getByText('Sometime this week')).toBeInTheDocument());
+	});
+
+	it('says next week when the estimate is in the following week', async () => {
+		// the live case: Wed Nov 25 → Tue Dec 1
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...estimate, estimatedDate: datePlusDays(TODAY, 6) }) });
+		renderClosedCard();
+		await waitFor(() => expect(screen.getByText('Next week')).toBeInTheDocument());
 	});
 
 	it('says more than a week away when no date is in the forecast', async () => {
