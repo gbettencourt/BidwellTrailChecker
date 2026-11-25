@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { dryingInches, estimateReopening } from './reopening.js';
+import { dryingInches, estimateReopening, isCityBusinessDay } from './reopening.js';
 import type { DayWeather } from './weather.js';
 
 const day = (date: string, precipitationIn: number, sunshineHours: number, maxTempF: number | null): DayWeather => ({
@@ -27,6 +27,39 @@ describe('reopening', () => {
 
 		test('unknown temperature assumes middling drying', () => {
 			expect(dryingInches(day('2026-11-20', 0, 8, null))).toBeCloseTo(0.35, 5);
+		});
+	});
+
+	describe('isCityBusinessDay', () => {
+		test('weekdays are business days', () => {
+			expect(isCityBusinessDay('2026-11-24')).toBe(true); // Tuesday
+			expect(isCityBusinessDay('2026-11-30')).toBe(true); // Monday
+		});
+
+		test('weekends are not business days', () => {
+			expect(isCityBusinessDay('2026-11-28')).toBe(false); // Saturday
+			expect(isCityBusinessDay('2026-11-29')).toBe(false); // Sunday
+		});
+
+		test('Thanksgiving and the day after are not business days', () => {
+			expect(isCityBusinessDay('2026-11-26')).toBe(false);
+			expect(isCityBusinessDay('2026-11-27')).toBe(false);
+		});
+
+		test('fixed and floating holidays are not business days', () => {
+			expect(isCityBusinessDay('2026-01-01')).toBe(false); // New Year's Day
+			expect(isCityBusinessDay('2026-01-19')).toBe(false); // MLK Day, third Monday
+			expect(isCityBusinessDay('2026-05-25')).toBe(false); // Memorial Day, last Monday
+			expect(isCityBusinessDay('2026-07-03')).toBe(false); // Independence Day observed Friday, July 4 is a Saturday
+			expect(isCityBusinessDay('2026-09-07')).toBe(false); // Labor Day, first Monday
+			expect(isCityBusinessDay('2026-11-11')).toBe(false); // Veterans Day
+			expect(isCityBusinessDay('2026-12-24')).toBe(false); // Christmas Eve
+			expect(isCityBusinessDay('2026-12-25')).toBe(false); // Christmas Day
+		});
+
+		test("New Year's Day on a Saturday is observed the Friday before, in the prior year", () => {
+			expect(isCityBusinessDay('2021-12-31')).toBe(false); // Jan 1, 2022 is a Saturday
+			expect(isCityBusinessDay('2021-12-30')).toBe(true);
 		});
 	});
 
@@ -135,6 +168,77 @@ describe('reopening', () => {
 			expect(estimate.estimatedDate).toBe('2026-11-18');
 			// the summary only covers days since the closure, not the lookback
 			expect(estimate.rainInches).toBe(0);
+		});
+
+		test('pushes a dry Saturday to Monday when no more rain follows', () => {
+			const days = [
+				day('2026-11-19', 1.4, 0, 50),
+				day('2026-11-20', 0, 8, 70),
+				day('2026-11-21', 0, 8, 70),
+				day('2026-11-22', 0, 8, 70),
+				day('2026-11-23', 0, 8, 70)
+			];
+			// 1.4 in dries at 0.7 in/day, so the trails are dry Saturday Nov 21
+			const estimate = estimateReopening(days, '2026-11-19T10:00:00Z', '2026-11-20');
+			expect(estimate.estimatedDate).toBe('2026-11-23');
+		});
+
+		test('says the next business day when the trails are already dry on a Saturday', () => {
+			const days = [
+				day('2026-11-16', 0.2, 0, 50),
+				day('2026-11-17', 0, 8, 65),
+				day('2026-11-18', 0, 8, 65),
+				day('2026-11-19', 0, 8, 65),
+				day('2026-11-20', 0, 8, 65),
+				day('2026-11-21', 0, 8, 65),
+				day('2026-11-22', 0, 8, 65),
+				day('2026-11-23', 0, 8, 65),
+				day('2026-11-24', 0, 8, 65),
+				day('2026-11-25', 0, 8, 65),
+				day('2026-11-26', 0, 8, 65),
+				day('2026-11-27', 0, 8, 65),
+				day('2026-11-28', 0, 8, 65),
+				day('2026-11-29', 0, 8, 65),
+				day('2026-11-30', 0, 8, 65)
+			];
+			const estimate = estimateReopening(days, '2026-11-16T10:00:00Z', '2026-11-28');
+			expect(estimate.estimatedDate).toBe('2026-11-30');
+		});
+
+		test('Thanksgiving 2026: dry Saturday, Sunday rain, so Tuesday Dec 1', () => {
+			// real Open-Meteo archive + forecast for Chico, Nov 9 – Dec 1;
+			// the model dries out Saturday Nov 28, but the City is closed
+			// Thu/Fri for Thanksgiving and 0.6 in falls Sunday Nov 29
+			const days = [
+				day('2026-11-09', 0, 9.86, 71.8),
+				day('2026-11-10', 0, 9.85, 76.1),
+				day('2026-11-11', 0, 9.83, 71.3),
+				day('2026-11-12', 0, 9.7, 71.8),
+				day('2026-11-13', 1.244, 2.33, 59.5),
+				day('2026-11-14', 0.067, 8.36, 60.2),
+				day('2026-11-15', 1.134, 0, 57.4),
+				day('2026-11-16', 0.173, 7.14, 54.8),
+				day('2026-11-17', 0.016, 9.75, 51.9),
+				day('2026-11-18', 1.516, 0, 50.6),
+				day('2026-11-19', 0.65, 3.08, 49.5),
+				day('2026-11-20', 0.311, 9.29, 52.1),
+				day('2026-11-21', 0.169, 3.14, 48.7),
+				day('2026-11-22', 0.051, 1.55, 52.6),
+				day('2026-11-23', 0, 9.04, 54.3),
+				day('2026-11-24', 0.067, 5.14, 53.3),
+				day('2026-11-25', 0.35, 7.43, 60.7),
+				day('2026-11-26', 0, 5.24, 61.9),
+				day('2026-11-27', 0, 8.88, 63.3),
+				day('2026-11-28', 0, 7.84, 67),
+				day('2026-11-29', 0.598, 0.51, 58.9),
+				day('2026-11-30', 0.114, 6.61, 60.3),
+				day('2026-12-01', 0.047, 8.86, 60.5)
+			];
+			const estimate = estimateReopening(days, '2026-11-16T20:30:00Z', '2026-11-25');
+			expect(estimate.estimatedDate).toBe('2026-12-01');
+			expect(estimate.rainInches).toBe(3.3);
+			expect(estimate.sunnyDays).toBe(5);
+			expect(estimate.highTempF).toBe(60.7);
 		});
 	});
 });

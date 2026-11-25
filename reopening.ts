@@ -6,7 +6,10 @@ import type { ReopeningEstimate, ReopeningUnavailable } from './shared-types.js'
 /**
  * Drying model, v1. A running "wetness" score in inches of rain:
  * each day's rain adds to it, each day's sun and warmth dry some of it
- * off. The trails are estimated dry the first day the score reaches zero.
+ * off. The trails are estimated to reopen the first City business day
+ * the score reaches zero — rangers don't open them on a weekend or a
+ * City holiday, so a dry Saturday still waits for Monday, and rain in
+ * between still counts.
  *
  * The constants are rough first guesses, not calibrated — the real
  * calibration is the site's own closure history, which is a follow-up
@@ -35,6 +38,58 @@ export function dryingInches(day: DayWeather): number {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+// City of Chico holidays (Municipal Code 10.10.030): New Year's Day,
+// MLK Day, Presidents Day, Memorial Day, Juneteenth, Independence Day,
+// Labor Day, Veterans Day, Thanksgiving and the day after, Christmas Eve
+// and Christmas Day. Fixed-date holidays falling on a weekend are
+// observed on the nearest weekday.
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const dateStr = (year: number, month: number, day: number) => `${year}-${pad2(month)}-${pad2(day)}`;
+const weekdayOf = (year: number, month: number, day: number) => new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
+const nthWeekdayOfMonth = (year: number, month: number, weekday: number, n: number) => {
+	const first = weekdayOf(year, month, 1);
+	return 1 + ((weekday - first + 7) % 7) + (n - 1) * 7;
+};
+const lastWeekdayOfMonth = (year: number, month: number, weekday: number) => {
+	const lastDay = new Date(Date.UTC(year, month, 0, 12)).getUTCDate();
+	const last = weekdayOf(year, month, lastDay);
+	return lastDay - ((last - weekday + 7) % 7);
+};
+
+export function isCityBusinessDay(date: string): boolean {
+	const [year, month, day] = date.split('-').map(Number);
+	if (!year || !month || !day) return false;
+	const weekday = weekdayOf(year, month, day);
+	if (weekday === 0 || weekday === 6) return false;
+
+	// holidays are computed for the surrounding years too, so a fixed
+	// holiday observed on Dec 31 (New Year's Day on a Saturday) is caught
+	const holidays = new Set<string>();
+	for (const y of [year - 1, year, year + 1]) {
+		const fixed = (m: number, d: number) => {
+			const base = new Date(Date.UTC(y, m - 1, d, 12));
+			const w = base.getUTCDay();
+			if (w === 6) base.setUTCDate(base.getUTCDate() - 1);
+			else if (w === 0) base.setUTCDate(base.getUTCDate() + 1);
+			holidays.add(dateStr(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate()));
+		};
+		fixed(1, 1);
+		fixed(6, 19);
+		fixed(7, 4);
+		fixed(11, 11);
+		fixed(12, 24);
+		fixed(12, 25);
+		holidays.add(dateStr(y, 1, nthWeekdayOfMonth(y, 1, 1, 3)));
+		holidays.add(dateStr(y, 2, nthWeekdayOfMonth(y, 2, 1, 3)));
+		holidays.add(dateStr(y, 5, lastWeekdayOfMonth(y, 5, 1)));
+		holidays.add(dateStr(y, 9, nthWeekdayOfMonth(y, 9, 1, 1)));
+		const thanksgiving = nthWeekdayOfMonth(y, 11, 4, 4);
+		holidays.add(dateStr(y, 11, thanksgiving));
+		holidays.add(dateStr(y, 11, thanksgiving + 1));
+	}
+	return !holidays.has(date);
+}
+
 /**
  * Pure estimate from a daily weather series and a closure start.
  * `today` defaults to the current local date; tests pass it explicitly.
@@ -44,14 +99,15 @@ export function estimateReopening(days: DayWeather[], closedSince: string, today
 	const sorted = [...days].sort((a, b) => (a.date < b.date ? -1 : 1));
 
 	let wetness = 0;
-	let wetAtClosure = 0;
 	let estimatedDate: string | null = null;
 	for (const day of sorted) {
 		if (day.date < start) continue;
 		wetness = Math.max(0, wetness + day.precipitationIn - dryingInches(day));
 		wetness = Math.min(wetness, MAX_WETNESS_IN);
-		if (day.date >= closedSince.slice(0, 10)) wetAtClosure = Math.max(wetAtClosure, wetness);
-		if (estimatedDate === null && day.date >= today && wetAtClosure > 0 && wetness === 0) {
+		// the estimate is a reopening, not just a dry day: it has to land
+		// on a day the City can actually open the trails, and the loop
+		// keeps going past a dry weekend/holiday so rain in between counts
+		if (estimatedDate === null && day.date >= today && wetness === 0 && isCityBusinessDay(day.date)) {
 			estimatedDate = day.date;
 		}
 	}
@@ -62,14 +118,9 @@ export function estimateReopening(days: DayWeather[], closedSince: string, today
 	const highs = actuals.map((d) => d.maxTempF).filter((t): t is number => t !== null);
 	const highTempF = highs.length ? Math.max(...highs) : null;
 
-	// no rain since the closure means the model already says dry; drying
-	// before today is caught by the loop itself, which stamps today the
-	// first day the score is zero
-	const finalDate = wetAtClosure === 0 ? today : estimatedDate;
-
 	return {
 		available: true,
-		estimatedDate: finalDate,
+		estimatedDate,
 		closedSince,
 		rainInches: round1(rainInches),
 		sunnyDays,
