@@ -9,7 +9,9 @@ import type { ReopeningEstimate, ReopeningUnavailable } from './shared-types.js'
  * off. The trails are estimated to reopen the first City business day
  * the score reaches zero — rangers don't open them on a weekend or a
  * City holiday, so a dry Saturday still waits for Monday, and rain in
- * between still counts.
+ * between still counts. The score must also have been zero the day
+ * before, so the trails were dry a full extra day first: we err on
+ * staying closed rather than giving false hope.
  *
  * The constants are rough first guesses, not calibrated — the real
  * calibration is the site's own closure history, which is a follow-up
@@ -99,15 +101,19 @@ export function estimateReopening(days: DayWeather[], closedSince: string, today
 	const sorted = [...days].sort((a, b) => (a.date < b.date ? -1 : 1));
 
 	let wetness = 0;
+	let dryDays = 0;
 	let estimatedDate: string | null = null;
 	for (const day of sorted) {
 		if (day.date < start) continue;
 		wetness = Math.max(0, wetness + day.precipitationIn - dryingInches(day));
 		wetness = Math.min(wetness, MAX_WETNESS_IN);
+		dryDays = wetness === 0 ? dryDays + 1 : 0;
 		// the estimate is a reopening, not just a dry day: it has to land
 		// on a day the City can actually open the trails, and the loop
-		// keeps going past a dry weekend/holiday so rain in between counts
-		if (estimatedDate === null && day.date >= today && wetness === 0 && isCityBusinessDay(day.date)) {
+		// keeps going past a dry weekend/holiday so rain in between counts.
+		// It also has to be the second dry day in a row, so the trails
+		// were dry a full extra day before we call the reopening.
+		if (estimatedDate === null && day.date >= today && wetness === 0 && dryDays > 1 && isCityBusinessDay(day.date)) {
 			estimatedDate = day.date;
 		}
 	}
