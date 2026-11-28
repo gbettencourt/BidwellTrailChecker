@@ -86,7 +86,9 @@ describe('reopening', () => {
 			];
 			const estimate = estimateReopening(days, '2026-11-16T10:00:00Z', '2026-11-19');
 			expect(estimate.available).toBe(true);
-			expect(estimate.estimatedDate).toBe('2026-11-24');
+			// wetness reaches zero Tuesday Nov 24, but the estimate waits
+			// for a second dry day, so Wednesday Nov 25
+			expect(estimate.estimatedDate).toBe('2026-11-25');
 			expect(estimate.rainInches).toBe(1.2);
 			expect(estimate.sunnyDays).toBe(0);
 			expect(estimate.highTempF).toBe(52);
@@ -133,9 +135,10 @@ describe('reopening', () => {
 				day('2025-12-31', 0, 8, 70)
 			];
 			// 15 in of rain uncapped would take ~3 weeks to dry at 0.7 in/day;
-			// capped at 3 in it takes 5 dry days
+			// capped at 3 in it takes 5 dry days to reach zero, plus one
+			// extra dry day before the reopening is called
 			const estimate = estimateReopening(days, '2025-12-16T10:00:00Z', '2025-12-26');
-			expect(estimate.estimatedDate).toBe('2025-12-30');
+			expect(estimate.estimatedDate).toBe('2025-12-31');
 		});
 
 		test('still returns no date when heavy rain keeps coming', () => {
@@ -165,7 +168,9 @@ describe('reopening', () => {
 				day('2026-11-19', 0, 8, 70)
 			];
 			const estimate = estimateReopening(days, '2026-11-16T10:00:00Z', '2026-11-17');
-			expect(estimate.estimatedDate).toBe('2026-11-18');
+			// wetness reaches zero Wednesday Nov 18, but the estimate waits
+			// for a second dry day, so Thursday Nov 19
+			expect(estimate.estimatedDate).toBe('2026-11-19');
 			// the summary only covers days since the closure, not the lookback
 			expect(estimate.rainInches).toBe(0);
 		});
@@ -179,6 +184,21 @@ describe('reopening', () => {
 				day('2026-11-23', 0, 8, 70)
 			];
 			// 1.4 in dries at 0.7 in/day, so the trails are dry Saturday Nov 21
+			const estimate = estimateReopening(days, '2026-11-19T10:00:00Z', '2026-11-20');
+			expect(estimate.estimatedDate).toBe('2026-11-23');
+		});
+
+		test('a dry Friday still waits for Monday with the extra dry day', () => {
+			const days = [
+				day('2026-11-19', 0.7, 0, 50),
+				day('2026-11-20', 0, 8, 70),
+				day('2026-11-21', 0, 8, 70),
+				day('2026-11-22', 0, 8, 70),
+				day('2026-11-23', 0, 8, 70)
+			];
+			// 0.7 in dries in one day, so the trails are dry Friday Nov 20,
+			// but that is only the first dry day — the estimate waits for a
+			// second, which lands on Monday Nov 23 after the weekend
 			const estimate = estimateReopening(days, '2026-11-19T10:00:00Z', '2026-11-20');
 			expect(estimate.estimatedDate).toBe('2026-11-23');
 		});
@@ -205,10 +225,12 @@ describe('reopening', () => {
 			expect(estimate.estimatedDate).toBe('2026-11-30');
 		});
 
-		test('Thanksgiving 2026: dry Saturday, Sunday rain, so Tuesday Dec 1', () => {
+		test('Thanksgiving 2026: dry Saturday, Sunday rain, so Wednesday Dec 2', () => {
 			// real Open-Meteo archive + forecast for Chico, Nov 9 – Dec 1;
 			// the model dries out Saturday Nov 28, but the City is closed
-			// Thu/Fri for Thanksgiving and 0.6 in falls Sunday Nov 29
+			// Thu/Fri for Thanksgiving and 0.6 in falls Sunday Nov 29.
+			// Wetness reaches zero again Tuesday Dec 1, the first dry day;
+			// the extra dry day pushes the estimate to Wednesday Dec 2.
 			const days = [
 				day('2026-11-09', 0, 9.86, 71.8),
 				day('2026-11-10', 0, 9.85, 76.1),
@@ -232,10 +254,11 @@ describe('reopening', () => {
 				day('2026-11-28', 0, 7.84, 67),
 				day('2026-11-29', 0.598, 0.51, 58.9),
 				day('2026-11-30', 0.114, 6.61, 60.3),
-				day('2026-12-01', 0.047, 8.86, 60.5)
+				day('2026-12-01', 0.047, 8.86, 60.5),
+				day('2026-12-02', 0, 8.5, 60)
 			];
 			const estimate = estimateReopening(days, '2026-11-16T20:30:00Z', '2026-11-25');
-			expect(estimate.estimatedDate).toBe('2026-12-01');
+			expect(estimate.estimatedDate).toBe('2026-12-02');
 			expect(estimate.rainInches).toBe(3.3);
 			expect(estimate.sunnyDays).toBe(5);
 			expect(estimate.highTempF).toBe(60.7);
